@@ -1,0 +1,119 @@
+[
+  {
+    "set_id": "4902-jp",
+    "page_id": 4902,
+    "title": "Vol.1",
+    "region": "jp",
+    "name": "{{Ruby|Ｖｏｌ．|ボリューム}}１",
+    "names": {
+      "ja": "{{Ruby|Ｖｏｌ．|ボリューム}}１",
+      "romaji": "Boryūmu Wan"
+    },
+    "image": "V1-BoosterJP.jpg",
+    "prefix": null,
+    "postfix": null,
+    "release_date": {
+      "text": "February 4, 1999",
+      "iso": "1999-02-04",
+      "source_region": "jp"
+    },
+    "printing_count": 40
+  },
+  {
+    "set_id": "224773-jp",
+    "page_id": 224773,
+    "title": "Legend of Blue Eyes White Dragon (Japanese)",
+    "region": "jp",
+    "name": "{{Ruby|青眼の白龍伝説|レジェンド・オブ・ブルーアイズ・ホワイト・ドラゴン}}",
+    "names": {
+      "ja": "{{Ruby|青眼の白龍伝説|レジェンド・オブ・ブルーアイズ・ホワイト・ドラゴン}}",
+      "romaji": "Rejendo obu Burūaizu Howaito Doragon"
+    },
+    "image": "LB-BoosterJP.jpg",
+    "prefix": "LB",
+    "postfix": null,
+    "release_date": {
+      "text": "May 18, 2000",
+      "iso": "2000-05-18",
+      "source_region": "jp"
+    },
+    "printing_count": 61
+  },
+  {
+    "set_id": "2484-en",
+    "page_id": 2484,
+    "title": "Legend of Blue Eyes White Dragon",
+    "region": "en",
+    "name": "Legend of Blue Eyes White Dragon",
+    "names": {
+      "en": "Legend of Blue Eyes White Dragon"
+    },
+    "image": "LOB-BoosterEN.png",
+    "prefix": "LOB-EN",
+    "postfix": null,
+    "release_date": {
+      "text": "December 1, 2004",
+      "iso": "2004-12-01",
+      "source_region": "en"
+    },
+    "printing_count": 126
+  },
+  {
+    "set_id": "2484-na",
+    "page_id": 2484,
+    "title": "Legend of Blue Eyes White Dragon",
+    "region": "na",
+    "name": "Legend of Blue Eyes White Dragon",
+    "names": {
+      "en": "Legend of Blue Eyes White Dragon"
+    },
+    "image": "LOB-BoosterEN.png",
+    "prefix": "LOB",
+    "postfix": null,
+    "release_date": {
+      "text": "March 8, 2002",
+      "iso": "2002-03-08",
+      "source_region": "na"
+    },
+    "printing_count": 126
+  },
+  {
+    "set_id": "1150803-en",
+    "page_id": 1150803,
+    "title": "Blazing Dominion",
+    "region": "en",
+    "name": "Blazing Dominion",
+    "names": {
+      "en": "Blazing Dominion"
+    },
+    "image": "BLZD-BoosterEN.png",
+    "prefix": "BLZD",
+    "postfix": null,
+    "release_date": {
+      "text": "May 8, 2026",
+      "iso": "2026-05-08",
+      "source_region": "na"
+    },
+    "printing_count": 125
+  },
+  {
+    "set_id": "1150803-jp",
+    "page_id": 1150803,
+    "title": "Blazing Dominion",
+    "region": "jp",
+    "name": "ブレイジング・ドミニオン",
+    "names": {
+      "ja": "ブレイジング・ドミニオン",
+      "romaji": "Bureijingu Dominion"
+    },
+    "image": "BLZD-BoosterEN.png",
+    "prefix": "BLZD",
+    "postfix": null,
+    "release_date": {
+      "text": "January 24, 2026",
+      "iso": "2026-01-24",
+      "source_region": "jp"
+    },
+    "printing_count": 120
+  }
+]

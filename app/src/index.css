@@ -112,3 +112,36 @@ a {
     padding-bottom: 1rem;
   }
 }
+
+/* Sets list */
+
+.set-list {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.set-row {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.set-title {
+  font-weight: 600;
+}
+
+.set-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.tag {
+  padding: 0 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+}
