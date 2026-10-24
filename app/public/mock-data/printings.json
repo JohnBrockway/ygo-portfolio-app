@@ -1,0 +1,228 @@
+[
+    {
+    "printing_id": "k4009:4902-jp:nonum:common",
+    "card_id": "k4009",
+    "set_id": "4902-jp",
+    "set_number": "VOL1--018",
+    "set_number_synthetic": true,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4041:4902-jp:nonum:ultra-rare",
+    "card_id": "k4041",
+    "set_id": "4902-jp",
+    "set_number": "VOL1--009",
+    "set_number_synthetic": true,
+    "rarity": "Ultra Rare"
+  },
+  {
+    "printing_id": "k4044:4902-jp:nonum:ultra-rare",
+    "card_id": "k4044",
+    "set_id": "4902-jp",
+    "set_number": "VOL1--015",
+    "set_number_synthetic": true,
+    "rarity": "Ultra Rare"
+  },
+  {
+    "printing_id": "k4065:4902-jp:nonum:common",
+    "card_id": "k4065",
+    "set_id": "4902-jp",
+    "set_number": "VOL1--024",
+    "set_number_synthetic": true,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4071:4902-jp:nonum:common",
+    "card_id": "k4071",
+    "set_id": "4902-jp",
+    "set_number": "VOL1--032",
+    "set_number_synthetic": true,
+    "rarity": "Common"
+  },
+
+  {
+    "printing_id": "k4119:224773-jp:LB-10:common",
+    "card_id": "k4119",
+    "set_id": "224773-jp",
+    "set_number": "LB-10",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4125:224773-jp:LB-11:rare",
+    "card_id": "k4125",
+    "set_id": "224773-jp",
+    "set_number": "LB-11",
+    "set_number_synthetic": false,
+    "rarity": "Rare"
+  },
+  {
+    "printing_id": "k4135:224773-jp:LB-12:common",
+    "card_id": "k4135",
+    "set_id": "224773-jp",
+    "set_number": "LB-12",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4138:224773-jp:LB-13:rare",
+    "card_id": "k4138",
+    "set_id": "224773-jp",
+    "set_number": "LB-13",
+    "set_number_synthetic": false,
+    "rarity": "Rare"
+  },
+  {
+    "printing_id": "k4139:224773-jp:LB-14:common",
+    "card_id": "k4139",
+    "set_id": "224773-jp",
+    "set_number": "LB-14",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4135:2484-en:LOB-EN013:common",
+    "card_id": "k4135",
+    "set_id": "2484-en",
+    "set_number": "LOB-EN013",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4138:2484-en:LOB-EN014:common",
+    "card_id": "k4138",
+    "set_id": "2484-en",
+    "set_number": "LOB-EN014",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4139:2484-en:LOB-EN015:rare",
+    "card_id": "k4139",
+    "set_id": "2484-en",
+    "set_number": "LOB-EN015",
+    "set_number_synthetic": false,
+    "rarity": "Rare"
+  },
+  {
+    "printing_id": "k4142:2484-en:LOB-EN072:common",
+    "card_id": "k4142",
+    "set_id": "2484-en",
+    "set_number": "LOB-EN072",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4148:2484-en:LOB-EN016:common",
+    "card_id": "k4148",
+    "set_id": "2484-en",
+    "set_number": "LOB-EN016",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4135:2484-na:LOB-013:common",
+    "card_id": "k4135",
+    "set_id": "2484-na",
+    "set_number": "LOB-013",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4138:2484-na:LOB-014:common",
+    "card_id": "k4138",
+    "set_id": "2484-na",
+    "set_number": "LOB-014",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4139:2484-na:LOB-015:rare",
+    "card_id": "k4139",
+    "set_id": "2484-na",
+    "set_number": "LOB-015",
+    "set_number_synthetic": false,
+    "rarity": "Rare"
+  },
+  {
+    "printing_id": "k4142:2484-na:LOB-072:common",
+    "card_id": "k4142",
+    "set_id": "2484-na",
+    "set_number": "LOB-072",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k4148:2484-na:LOB-016:common",
+    "card_id": "k4148",
+    "set_id": "2484-na",
+    "set_number": "LOB-016",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+
+  {
+    "printing_id": "k22511:1150803-en:BLZD-EN002:secret-rare",
+    "card_id": "k22511",
+    "set_id": "1150803-en",
+    "set_number": "BLZD-EN002",
+    "set_number_synthetic": false,
+    "rarity": "Secret Rare"
+  },
+  {
+    "printing_id": "k22511:1150803-en:BLZD-EN002:starlight-rare",
+    "card_id": "k22511",
+    "set_id": "1150803-en",
+    "set_number": "BLZD-EN002",
+    "set_number_synthetic": false,
+    "rarity": "Starlight Rare"
+  },
+  {
+    "printing_id": "k22512:1150803-en:BLZD-EN003:common",
+    "card_id": "k22512",
+    "set_id": "1150803-en",
+    "set_number": "BLZD-EN003",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k22513:1150803-en:BLZD-EN004:common",
+    "card_id": "k22513",
+    "set_id": "1150803-en",
+    "set_number": "BLZD-EN004",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k22511:1150803-jp:BLZD-JP002:secret-rare",
+    "card_id": "k22511",
+    "set_id": "1150803-jp",
+    "set_number": "BLZD-JP002",
+    "set_number_synthetic": false,
+    "rarity": "Secret Rare"
+  },
+  {
+    "printing_id": "k22511:1150803-jp:BLZD-JP002:super-rare",
+    "card_id": "k22511",
+    "set_id": "1150803-jp",
+    "set_number": "BLZD-JP002",
+    "set_number_synthetic": false,
+    "rarity": "Super Rare"
+  },
+  {
+    "printing_id": "k22512:1150803-jp:BLZD-JP003:common",
+    "card_id": "k22512",
+    "set_id": "1150803-jp",
+    "set_number": "BLZD-JP003",
+    "set_number_synthetic": false,
+    "rarity": "Common"
+  },
+  {
+    "printing_id": "k22513:1150803-jp:BLZD-JP004:rare",
+    "card_id": "k22513",
+    "set_id": "1150803-jp",
+    "set_number": "BLZD-JP004",
+    "set_number_synthetic": false,
+    "rarity": "Rare"
+  }
+]

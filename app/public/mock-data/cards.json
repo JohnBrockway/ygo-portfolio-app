@@ -1,0 +1,352 @@
+[
+    {
+    "card_id": "k4009",
+    "pageid": 2861,
+    "title": "Hitotsu-Me Giant",
+    "name_ja": "サイクロプス",
+    "konami_id": "4009",
+    "password": "76184692",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "HitotsuMeGiant-KC01-EN-UR-UE.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k4041",
+    "pageid": 1132,
+    "title": "Dark Magician",
+    "name_ja": "ブラック・マジシャン",
+    "konami_id": "4041",
+    "password": "46986414",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "DarkMagician-TF05-JP-VG-artwork.png",
+        "art_only": true
+      },
+      {
+        "index": "2",
+        "file": "DarkMagician-TF05-JP-VG-2-artwork.png",
+        "art_only": true
+      },
+      {
+        "index": "4",
+        "file": "DarkMagician-MADU-EN-VG-artwork.png",
+        "art_only": true
+      },
+      {
+        "index": "5",
+        "file": "DarkMagician-TF05-JP-VG-5-artwork.png",
+        "art_only": true
+      },
+      {
+        "index": "6",
+        "file": "DarkMagician-MADU-EN-VG-artwork-2.png",
+        "art_only": true
+      },
+      {
+        "index": "7",
+        "file": "DarkMagician-OW-3.png",
+        "art_only": true
+      },
+      {
+        "index": "8",
+        "file": "DarkMagician-MADU-EN-VG-artwork-3.png",
+        "art_only": true
+      },
+      {
+        "index": "9",
+        "file": "DarkMagician-DULI-EN-VG-artwork-6.png",
+        "art_only": true
+      },
+      {
+        "index": "10",
+        "file": "DarkMagician-CA-9.png",
+        "art_only": true
+      },
+      {
+        "index": "11",
+        "file": "DarkMagician-CA-10.png",
+        "art_only": true
+      },
+      {
+        "index": "12",
+        "file": "DarkMagician-CA-11.png",
+        "art_only": true
+      },
+      {
+        "index": "13",
+        "file": "DarkMagician-CA-13.png",
+        "art_only": true
+      },
+      {
+        "index": "14",
+        "file": "DarkMagician-CA-14.png",
+        "art_only": true
+      },
+      {
+        "index": "15",
+        "file": "DarkMagician-OW-5.png",
+        "art_only": true
+      },
+      {
+        "index": "16",
+        "file": "DarkMagician-DAR.png",
+        "art_only": true
+      },
+      {
+        "index": "17",
+        "file": "DarkMagician-OW-6.png",
+        "art_only": true
+      },
+      {
+        "index": "18",
+        "file": "DarkMagician-JP-Manga-DM-CA.png",
+        "art_only": true
+      },
+      {
+        "index": "19",
+        "file": "DarkMagician-YAC1-JP-UR-MangaStyle-Color.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k4044",
+    "pageid": 508714,
+    "title": "Gaia The Fierce Knight",
+    "name_ja": "{{Ruby|暗|あん}}{{Ruby|黒|こく}}{{Ruby|騎|き}}{{Ruby|士|し}}ガイア",
+    "konami_id": "4044",
+    "password": "06368038",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "GaiaTheFierceKnight-MADU-EN-VG-artwork.png",
+        "art_only": true
+      },
+      {
+        "index": "2",
+        "file": "GaiaTheFierceKnight-TF05-JP-VG-2-artwork.png",
+        "art_only": true
+      },
+      {
+        "index": "3",
+        "file": "GaiaTheFierceKnight-DAR-2.png",
+        "art_only": true
+      },
+      {
+        "index": "4",
+        "file": "GaiatheFierceKnight-JP-Manga-DM-CA.png",
+        "art_only": true
+      },
+      {
+        "index": "5",
+        "file": "GaiaTheFierceKnight-YAC1-JP-UR-MangaStyle-Color.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k4065",
+    "pageid": 504863,
+    "title": "Mammoth Graveyard",
+    "name_ja": "マンモスの{{Ruby|墓|はか}}{{Ruby|場|ば}}",
+    "konami_id": "4065",
+    "password": "40374923",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "MammothGraveyard-LOB-EN-C-UE-25thAnniversaryEdition.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k4071",
+    "pageid": 504867,
+    "title": "Silver Fang",
+    "name_ja": "シルバー・フォング",
+    "konami_id": "4071",
+    "password": "90357090",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "SilverFang-LOB-EN-C-UE-25thAnniversaryEdition.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k4119",
+    "pageid": 505025,
+    "title": "Dark Gray",
+    "name_ja": "ダーク・グレイ",
+    "konami_id": "4119",
+    "password": "09159938",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "DarkGray-LOB-EN-C-UE-25thAnniversaryEdition.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k4125",
+    "pageid": 504873,
+    "title": "Trial of Nightmare",
+    "name_ja": "{{Ruby|地|じ}}{{Ruby|獄|ごく}}の{{Ruby|裁|さい}}{{Ruby|判|ばん}}",
+    "konami_id": "4125",
+    "password": "77827521",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "TrialofNightmare-MADU-JP-VG-artwork.png",
+        "art_only": true
+      },
+      {
+        "index": "1.1",
+        "file": "TrialofNightmare-MADU-EN-VG-artwork.png",
+        "art_only": true
+      }
+    ]
+  },
+  {
+    "card_id": "k4135",
+    "pageid": 505061,
+    "title": "Nemuriko",
+    "name_ja": "{{Ruby|眠|ねむ}}り{{Ruby|子|こ}}",
+    "konami_id": "4135",
+    "password": "90963488",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "Nemuriko-LOB-EN-C-UE-25thAnniversaryEdition.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k4138",
+    "pageid": 505088,
+    "title": "The 13th Grave",
+    "name_ja": "１３{{Ruby|人|にん}}{{Ruby|目|め}}の{{Ruby|埋|まい}}{{Ruby|葬|そう}}{{Ruby|者|しゃ}}",
+    "konami_id": "4138",
+    "password": "00032864",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "The13thGrave-LOB-EN-C-UE-25thAnniversaryEdition.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k4139",
+    "pageid": 505125,
+    "title": "Charubin the Fire Knight",
+    "name_ja": "{{Ruby|炎|ほのお}}の{{Ruby|騎|き}}{{Ruby|士|し}} キラー",
+    "konami_id": "4139",
+    "password": "37421579",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "CharubintheFireKnight-LOB-EN-R-UE-25thAnniversaryEdition.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k4142",
+    "pageid": 507020,
+    "title": "Witty Phantom",
+    "name_ja": "{{Ruby|魔|ま}}{{Ruby|人|じん}}デスサタン",
+    "konami_id": "4142",
+    "password": "36304921",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "WittyPhantom-LOB-EN-C-UE-25thAnniversaryEdition.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k4148",
+    "pageid": 505163,
+    "title": "Flame Manipulator",
+    "name_ja": "{{Ruby|炎|ほのお}}を{{Ruby|操|あやつ}}る{{Ruby|者|もの}}",
+    "konami_id": "4148",
+    "password": "34460851",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "FlameManipulator-LOB-EN-C-UE-25thAnniversaryEdition.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k22511",
+    "pageid": 1158752,
+    "title": "Power Vice Dragon",
+    "name_ja": "パワー・バイス・ドラゴン",
+    "konami_id": "22511",
+    "password": "19434243",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "PowerViceDragon-BLZD-EN-ScR-1E.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k22512",
+    "pageid": 1158753,
+    "title": "Fiend Piece Golem",
+    "name_ja": "デモン・ピース・ゴーレム",
+    "konami_id": "22512",
+    "password": "56838842",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "FiendPieceGolem-BLZD-EN-C-1E.png",
+        "art_only": false
+      }
+    ]
+  },
+  {
+    "card_id": "k22513",
+    "pageid": 1158754,
+    "title": "Red Nova Dragon/Assault Mode",
+    "name_ja": "スカーレッド・ノヴァ・ドラゴン{{Ruby|／|スラッシュ}}バスター",
+    "konami_id": "22513",
+    "password": "82323997",
+    "card_type": "Monster",
+    "images": [
+      {
+        "index": "1",
+        "file": "RedNovaDragonAssaultMode-BLZD-EN-C-1E.png",
+        "art_only": false
+      }
+    ]
+  }
+]

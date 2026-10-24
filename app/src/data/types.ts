@@ -23,3 +23,35 @@ export interface CardSet {
   release_date: ReleaseDate;
   printing_count: number;
 }
+
+export interface Printing {
+  printing_id: string;
+  card_id: string;
+  set_id: string;
+  set_number: string;
+  set_number_synthetic: boolean;
+  rarity: string;
+}
+
+export interface CardImage {
+  index: string;
+  file: string;
+  art_only: boolean;
+}
+
+export interface Card {
+  card_id: string;
+  pageid: number;
+  title: string;
+  name_ja: string;
+  konami_id: string;
+  password: string;
+  card_type: string;
+  images: CardImage[];
+}
+
+export interface MasterData {
+  sets: CardSet[];
+  printings: Printing[];
+  cards: Card[];
+}

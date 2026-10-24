@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { loadSets } from "../data/loadSets";
+import { Link } from "react-router-dom";
+import { SetMeta } from "../components/SetMeta";
+import { loadSets } from "../data/masterData";
 import type { CardSet } from "../data/types";
-
-function formatPrintingCount(count: number): string {
-  return count === 1 ? "1 card" : `${count} cards`;
-}
 
 export function SetsPage() {
   const [sets, setSets] = useState<CardSet[] | null>(null);
@@ -41,15 +39,13 @@ export function SetsPage() {
     content = <p className="muted">No sets found.</p>;
   } else {
     content = (
-      <ul className="set-list">
+      <ul className="row-list">
         {sets.map((set) => (
-          <li key={set.set_id} className="set-row">
-            <div className="set-title">{set.title}</div>
-            <div className="set-meta">
-              <span className="tag">{set.region.toUpperCase()}</span>
-              <span>{set.release_date.text}</span>
-              <span>{formatPrintingCount(set.printing_count)}</span>
-            </div>
+          <li key={set.set_id}>
+            <Link to={`/sets/${set.set_id}`} className="row">
+              <div className="row-title">{set.title}</div>
+              <SetMeta set={set} />
+            </Link>
           </li>
         ))}
       </ul>

@@ -113,24 +113,27 @@ a {
   }
 }
 
-/* Sets list */
+/* Lists of rows (sets, printings) */
 
-.set-list {
+.row-list {
   margin: 1rem 0 0;
   padding: 0;
   list-style: none;
 }
 
-.set-row {
+.row {
+  display: block;
   padding: 0.75rem 0;
   border-bottom: 1px solid var(--border);
+  color: inherit;
+  text-decoration: none;
 }
 
-.set-title {
+.row-title {
   font-weight: 600;
 }
 
-.set-meta {
+.row-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
