@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 const NAV_ITEMS = [
   { to: "/sets", label: "Sets" },
@@ -8,6 +9,8 @@ const NAV_ITEMS = [
 ];
 
 export function AppShell() {
+  const location = useLocation();
+
   return (
     <div className="shell">
       <nav className="nav" aria-label="Main">
@@ -19,7 +22,9 @@ export function AppShell() {
         ))}
       </nav>
       <main className="content">
-        <Outlet />
+        <ErrorBoundary key={location.pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   );

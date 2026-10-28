@@ -5,10 +5,12 @@ function formatPrintingCount(count: number): string {
 }
 
 export function SetMeta({ set }: { set: CardSet }) {
+  const dateText = set.release_date ? set.release_date.text : "Date unknown";
+
   return (
     <div className="row-meta">
       <span className="tag">{set.region.toUpperCase()}</span>
-      <span>{set.release_date.text}</span>
+      <span>{dateText}</span>
       <span>{formatPrintingCount(set.printing_count)}</span>
     </div>
   );

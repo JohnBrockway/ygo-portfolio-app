@@ -20,7 +20,7 @@ export interface CardSet {
   image: string;
   prefix: string | null;
   postfix: string | null;
-  release_date: ReleaseDate;
+  release_date: ReleaseDate | null;
   printing_count: number;
 }
 
