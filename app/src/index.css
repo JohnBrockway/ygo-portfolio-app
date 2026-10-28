@@ -148,3 +148,28 @@ a {
   border-radius: 0.25rem;
   font-size: 0.75rem;
 }
+
+/* Filter bar (sets, later printings and cards) */
+
+.search-bar {
+  display: block;
+  width: 100%;
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.75rem;
+  appearance: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.search-bar::placeholder {
+  color: var(--text-muted);
+}
+
+.search-bar:focus {
+  outline: none;
+  border-color: var(--accent);
+}
