@@ -36,7 +36,17 @@ export function SetsPage() {
     };
   }, []);
 
+  const tokens = useMemo(() => splitQuery(query), [query]);
+
+  // Regions come from the full unfiltered list, so toggling one off never removes its button.
   const regions = useMemo(() => (sets === null ? [] : getRegions(sets)), [sets]);
+
+  const visibleSets = useMemo(() => {
+    if (sets === null) {
+      return [];
+    }
+    return sets.filter((set) => !disabledRegions.has(set.region) && matchesAllTokens(set.title, tokens));
+  }, [sets, tokens, disabledRegions]);
 
   let content: ReactNode;
   if (error !== null) {
@@ -47,28 +57,21 @@ export function SetsPage() {
     content = <p className="muted">No sets found.</p>;
   } else if (regions.every((region) => disabledRegions.has(region))) {
     content = <p className="muted">No regions selected.</p>;
+  } else if (visibleSets.length === 0) {
+    content = <p className="muted">No sets match “{query.trim()}”.</p>;
   } else {
-    const tokens = splitQuery(query);
-    const visibleSets = sets.filter(
-      (set) => !disabledRegions.has(set.region) && matchesAllTokens(set.title, tokens)
+    content = (
+      <ul className="row-list">
+        {visibleSets.map((set) => (
+          <li key={set.set_id}>
+            <Link to={`/sets/${set.set_id}`} className="row">
+              <div className="row-title">{set.title}</div>
+              <SetMeta set={set} />
+            </Link>
+          </li>
+        ))}
+      </ul>
     );
-
-    if (visibleSets.length === 0) {
-      content = <p className="muted">No sets match “{query.trim()}”.</p>;
-    } else {
-      content = (
-        <ul className="row-list">
-          {visibleSets.map((set) => (
-            <li key={set.set_id}>
-              <Link to={`/sets/${set.set_id}`} className="row">
-                <div className="row-title">{set.title}</div>
-                <SetMeta set={set} />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      );
-    }
   }
 
   return (

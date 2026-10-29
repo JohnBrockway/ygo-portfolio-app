@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
 import { loadMasterData } from "../data/masterData";
+import { getRegions, toggleRegion } from "../data/regions";
 import { matchesAllTokens, splitQuery } from "../data/search";
 import type { Card, MasterData } from "../data/types";
 
@@ -50,6 +52,39 @@ function findPrintingMatches(printings: PrintingRecord[], tokens: string[]): Pri
   // numeric: true sorts "LOB-EN013" before "LOB-EN072".
   matches.sort((a, b) => a.set_number.localeCompare(b.set_number, undefined, { numeric: true }));
   return matches;
+}
+
+// The full list of regions any visible result has printings in. Built once per data load.
+function buildRegionsByCardId(
+  printings: PrintingRecord[],
+  setsById: Map<string, SetRecord>
+): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>();
+  for (const printing of printings) {
+    const set = setsById.get(printing.set_id);
+    if (set === undefined) {
+      continue;
+    }
+    let cardRegions = map.get(printing.card_id);
+    if (cardRegions === undefined) {
+      cardRegions = new Set<string>();
+      map.set(printing.card_id, cardRegions);
+    }
+    cardRegions.add(set.region);
+  }
+  return map;
+}
+
+function hasEnabledRegion(cardRegions: Set<string> | undefined, disabledRegions: Set<string>): boolean {
+  if (cardRegions === undefined) {
+    return false;
+  }
+  for (const region of cardRegions) {
+    if (!disabledRegions.has(region)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function CardRow({ card }: { card: Card }) {
@@ -106,6 +141,7 @@ function ResultSection({ title, total, children }: { title: string; total: numbe
 
 function CardSearch({ data }: { data: MasterData }) {
   const [query, setQuery] = useState("");
+  const [disabledRegions, setDisabledRegions] = useState<Set<string>>(() => new Set());
   const tokens = useMemo(() => splitQuery(query), [query]);
 
   const cardsById = useMemo(() => {
@@ -124,23 +160,40 @@ function CardSearch({ data }: { data: MasterData }) {
     return map;
   }, [data]);
 
+  // Regions come from the full unfiltered data, so toggling one off never removes its button.
+  const regions = useMemo(() => getRegions(data.sets), [data]);
+  const regionsByCardId = useMemo(() => buildRegionsByCardId(data.printings, setsById), [data, setsById]);
+
   const cardMatches = useMemo(() => {
     if (tokens.length === 0) {
       return [];
     }
-    return findCardMatches(data.cards, tokens);
-  }, [data, tokens]);
+    const matches = findCardMatches(data.cards, tokens);
+    if (disabledRegions.size === 0) {
+      return matches;
+    }
+    return matches.filter((card) => hasEnabledRegion(regionsByCardId.get(card.card_id), disabledRegions));
+  }, [data, tokens, disabledRegions, regionsByCardId]);
 
   const printingMatches = useMemo(() => {
     if (tokens.length === 0) {
       return [];
     }
-    return findPrintingMatches(data.printings, tokens);
-  }, [data, tokens]);
+    const matches = findPrintingMatches(data.printings, tokens);
+    if (disabledRegions.size === 0) {
+      return matches;
+    }
+    return matches.filter((printing) => {
+      const set = setsById.get(printing.set_id);
+      return set === undefined || !disabledRegions.has(set.region);
+    });
+  }, [data, tokens, disabledRegions, setsById]);
 
   let results: ReactNode;
-  if (tokens.length === 0) {
-    results = <p className="muted">Type a card name or set number to search.</p>;
+  if (regions.length > 0 && regions.every((region) => disabledRegions.has(region))) {
+    results = <p className="muted">No regions selected.</p>;
+  } else if (tokens.length === 0) {
+    // TODO show random sample cards when no query entered
   } else if (cardMatches.length === 0 && printingMatches.length === 0) {
     results = <p className="muted">No cards or printings match “{query.trim()}”.</p>;
   } else {
@@ -180,6 +233,11 @@ function CardSearch({ data }: { data: MasterData }) {
         onChange={setQuery}
         placeholder="Search by card name or set number"
         label="Search by card name or set number"
+      />
+      <RegionToggles
+        regions={regions}
+        disabledRegions={disabledRegions}
+        onToggle={(region) => setDisabledRegions(toggleRegion(disabledRegions, region))}
       />
       {results}
     </>
