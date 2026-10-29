@@ -6,6 +6,9 @@ export interface ReleaseDate {
   source_region: string;
 }
 
+// The fixed option list the pipeline validates against.
+export type Edition = "1st_edition" | "limited" | "unlimited";
+
 export interface CardSet {
   set_id: string;
   page_id: number;
@@ -21,6 +24,7 @@ export interface CardSet {
   prefix: string | null;
   postfix: string | null;
   release_date: ReleaseDate | null;
+  editions: Edition[];
   printing_count: number;
 }
 
