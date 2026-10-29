@@ -173,3 +173,38 @@ a {
   outline: none;
   border-color: var(--accent);
 }
+
+.region-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.region-toggle {
+  box-sizing: border-box;
+  width: 3.5rem;
+  height: 2rem;
+  padding: 0;
+
+  /* Centre the label horizontally and vertically. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font: inherit; /* must come before line-height, because it resets it */
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  appearance: none;
+  cursor: pointer;
+}
+
+.region-toggle-off {
+  opacity: 0.35;
+}
