@@ -14,43 +14,40 @@ type PrintingRecord = MasterData["printings"][number];
 // Keeps the DOM small; the heading shows the full match count.
 const MAX_RESULTS_PER_SECTION = 50;
 
-// Callers pass a non-empty token list.
-function findCardMatches(cards: Card[], tokens: string[]): Card[] {
+// Shared collators: calling localeCompare with options builds a new collator on every call,
+// which is far slower than reusing one. numeric: true sorts "LOB-EN013" before "LOB-EN072".
+const titleCollator = new Intl.Collator();
+const setNumberCollator = new Intl.Collator(undefined, { numeric: true });
+
+// Callers pass a non-empty token list and cards already sorted by title.
+function findCardMatches(sortedCards: Card[], tokens: string[]): Card[] {
   const firstToken = tokens[0].toLowerCase();
 
-  const matches: Card[] = [];
-  for (const card of cards) {
-    if (matchesAllTokens(card.title, tokens)) {
-      matches.push(card);
-    }
-  }
-
-  // Titles that start with the first token come first, then alphabetical.
-  matches.sort((a, b) => {
-    const aStarts = a.title.toLowerCase().startsWith(firstToken);
-    const bStarts = b.title.toLowerCase().startsWith(firstToken);
-    if (aStarts !== bStarts) {
-      return aStarts ? -1 : 1;
-    }
-    return a.title.localeCompare(b.title);
-  });
-  return matches;
-}
-
-function findPrintingMatches(printings: PrintingRecord[], tokens: string[]): PrintingRecord[] {
-  const matches: PrintingRecord[] = [];
-  for (const printing of printings) {
-    // Synthetic set numbers are never shown, so they must not be searchable either.
-    if (printing.set_number_synthetic) {
+  // Titles that start with the first token come first. Both groups keep the
+  // input's alphabetical order, so no sorting is needed here.
+  const prefixMatches: Card[] = [];
+  const otherMatches: Card[] = [];
+  for (const card of sortedCards) {
+    if (!matchesAllTokens(card.title, tokens)) {
       continue;
     }
+    if (card.title.toLowerCase().startsWith(firstToken)) {
+      prefixMatches.push(card);
+    } else {
+      otherMatches.push(card);
+    }
+  }
+  return prefixMatches.concat(otherMatches);
+}
+
+// Callers pass printings already sorted by set number, with synthetic numbers removed.
+function findPrintingMatches(sortedPrintings: PrintingRecord[], tokens: string[]): PrintingRecord[] {
+  const matches: PrintingRecord[] = [];
+  for (const printing of sortedPrintings) {
     if (matchesAllTokens(printing.set_number, tokens)) {
       matches.push(printing);
     }
   }
-
-  // numeric: true sorts "LOB-EN013" before "LOB-EN072".
-  matches.sort((a, b) => a.set_number.localeCompare(b.set_number, undefined, { numeric: true }));
   return matches;
 }
 
@@ -160,6 +157,21 @@ function CardSearch({ data }: { data: MasterData }) {
     return map;
   }, [data]);
 
+  // Sorted once per data load, not per keystroke. Copies, so the shared master data isn't reordered.
+  const sortedCards = useMemo(
+    () => [...data.cards].sort((a, b) => titleCollator.compare(a.title, b.title)),
+    [data]
+  );
+
+  // Synthetic set numbers are never shown, so they must not be searchable either.
+  const searchablePrintings = useMemo(
+    () =>
+      data.printings
+        .filter((printing) => !printing.set_number_synthetic)
+        .sort((a, b) => setNumberCollator.compare(a.set_number, b.set_number)),
+    [data]
+  );
+
   // Regions come from the full unfiltered data, so toggling one off never removes its button.
   const regions = useMemo(() => getRegions(data.sets), [data]);
   const regionsByCardId = useMemo(() => buildRegionsByCardId(data.printings, setsById), [data, setsById]);
@@ -168,18 +180,18 @@ function CardSearch({ data }: { data: MasterData }) {
     if (tokens.length === 0) {
       return [];
     }
-    const matches = findCardMatches(data.cards, tokens);
+    const matches = findCardMatches(sortedCards, tokens);
     if (disabledRegions.size === 0) {
       return matches;
     }
     return matches.filter((card) => hasEnabledRegion(regionsByCardId.get(card.card_id), disabledRegions));
-  }, [data, tokens, disabledRegions, regionsByCardId]);
+  }, [sortedCards, tokens, disabledRegions, regionsByCardId]);
 
   const printingMatches = useMemo(() => {
     if (tokens.length === 0) {
       return [];
     }
-    const matches = findPrintingMatches(data.printings, tokens);
+    const matches = findPrintingMatches(searchablePrintings, tokens);
     if (disabledRegions.size === 0) {
       return matches;
     }
@@ -187,7 +199,7 @@ function CardSearch({ data }: { data: MasterData }) {
       const set = setsById.get(printing.set_id);
       return set === undefined || !disabledRegions.has(set.region);
     });
-  }, [data, tokens, disabledRegions, setsById]);
+  }, [searchablePrintings, tokens, disabledRegions, setsById]);
 
   let results: ReactNode;
   if (regions.length > 0 && regions.every((region) => disabledRegions.has(region))) {
