@@ -10,7 +10,6 @@ type PrintingRecord = MasterData["printings"][number];
 // A printing plus the set info we need to display and sort it.
 type PrintingRowData = {
   printing: PrintingRecord;
-  set: SetRecord | undefined;
   releaseDate: string | null;
   region: string;
   setTitle: string;
@@ -75,7 +74,6 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
     }
     rows.push({
       printing,
-      set,
       releaseDate,
       region: set === undefined ? "" : set.region,
       setTitle: set === undefined ? printing.set_id : set.title,
@@ -90,19 +88,15 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
     list = (
       <ul className="row-list">
         {rows.map((row) => (
-          <li key={row.printing.printing_id} className="row">
-            <div className="row-title">
-              {row.set === undefined ? (
-                row.setTitle
-              ) : (
-                <Link to={`/sets/${row.set.set_id}`}>{row.setTitle}</Link>
-              )}
-            </div>
-            <div className="row-meta">
-              {row.region === "" ? null : <span className="tag">{row.region}</span>}
-              {row.printing.set_number_synthetic ? null : <span>{row.printing.set_number}</span>}
-              <span className="tag">{row.printing.rarity}</span>
-            </div>
+          <li key={row.printing.printing_id}>
+            <Link to={`/printings/${row.printing.printing_id}`} className="row">
+              <div className="row-title">{row.setTitle}</div>
+              <div className="row-meta">
+                {row.region === "" ? null : <span className="tag">{row.region}</span>}
+                {row.printing.set_number_synthetic ? null : <span>{row.printing.set_number}</span>}
+                <span className="tag">{row.printing.rarity}</span>
+              </div>
+            </Link>
           </li>
         ))}
       </ul>

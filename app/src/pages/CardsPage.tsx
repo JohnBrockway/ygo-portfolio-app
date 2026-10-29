@@ -110,14 +110,16 @@ function PrintingRow({
   const setTitle = set === undefined ? printing.set_id : set.title;
 
   return (
-    <li className="row">
-      <div className="row-title">{cardName}</div>
-      <div className="row-meta">
-        {set === undefined ? null : <span className="tag">{set.region}</span>}
-        {printing.set_number_synthetic ? null : <span>{printing.set_number}</span>}
-        <span className="tag">{printing.rarity}</span>
-        {set === undefined ? <span>{setTitle}</span> : <Link to={`/sets/${set.set_id}`}>{setTitle}</Link>}
-      </div>
+    <li>
+      <Link to={`/printings/${printing.printing_id}`} className="row">
+        <div className="row-title">{cardName}</div>
+        <div className="row-meta">
+          {set === undefined ? null : <span className="tag">{set.region}</span>}
+          {printing.set_number_synthetic ? null : <span>{printing.set_number}</span>}
+          <span className="tag">{printing.rarity}</span>
+          <span>{setTitle}</span>
+        </div>
+      </Link>
     </li>
   );
 }
