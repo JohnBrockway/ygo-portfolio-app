@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
 import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
-import { SetMeta } from "../components/SetMeta";
+import { SetTile } from "../components/SetTile";
 import { loadSets } from "../data/masterData";
 import { getRegions, toggleRegion } from "../data/regions";
 import { matchesAllTokens, splitQuery } from "../data/search";
@@ -61,13 +60,10 @@ export function SetsPage() {
     content = <p className="muted">No sets match “{query.trim()}”.</p>;
   } else {
     content = (
-      <ul className="row-list">
+      <ul className="tile-grid">
         {visibleSets.map((set) => (
           <li key={set.set_id}>
-            <Link to={`/sets/${set.set_id}`} className="row">
-              <div className="row-title">{set.title}</div>
-              <SetMeta set={set} />
-            </Link>
+            <SetTile set={set} />
           </li>
         ))}
       </ul>
