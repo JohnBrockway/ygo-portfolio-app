@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { CardTile } from "../components/CardTile";
 import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
 import { loadMasterData } from "../data/masterData";
@@ -82,17 +83,6 @@ function hasEnabledRegion(cardRegions: Set<string> | undefined, disabledRegions:
     }
   }
   return false;
-}
-
-function CardRow({ card }: { card: Card }) {
-  return (
-    <li>
-      <Link to={`/cards/${card.card_id}`} className="row">
-        <div className="row-title">{card.title}</div>
-        <div className="row-meta">{card.card_type ? <span className="tag">{card.card_type}</span> : null}</div>
-      </Link>
-    </li>
-  );
 }
 
 function PrintingRow({
@@ -215,9 +205,11 @@ function CardSearch({ data }: { data: MasterData }) {
       <>
         {cardMatches.length > 0 ? (
           <ResultSection title="Cards" total={cardMatches.length}>
-            <ul className="row-list">
+            <ul className="tile-grid tile-grid-cards">
               {cardMatches.slice(0, MAX_RESULTS_PER_SECTION).map((card) => (
-                <CardRow key={card.card_id} card={card} />
+                <li key={card.card_id}>
+                  <CardTile card={card} />
+                </li>
               ))}
             </ul>
           </ResultSection>

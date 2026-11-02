@@ -290,3 +290,8 @@ a {
 .tile-meta .tag {
   text-transform: uppercase;
 }
+
+/* Card tiles: portrait image area, matching the 360x480 thumbnails (art-only images letterbox inside it). */
+.tile-grid-cards {
+  --tile-image-ratio: 3 / 4;
+}
