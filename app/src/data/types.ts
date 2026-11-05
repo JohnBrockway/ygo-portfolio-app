@@ -23,6 +23,7 @@ export interface CardSet {
     ja?: string;
     romaji?: string;
   };
+  games: Game[];
   image: string;
   thumb?: string;
   prefix: string | null;

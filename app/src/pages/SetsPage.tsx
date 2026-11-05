@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { GameToggles } from "../components/GameToggles";
 import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
 import { SetTile } from "../components/SetTile";
+import { getSetGames, toggleGame } from "../data/games";
 import { loadSets } from "../data/masterData";
 import { getRegions, toggleRegion } from "../data/regions";
 import { matchesAllTokens, splitQuery } from "../data/search";
-import type { CardSet } from "../data/types";
+import type { CardSet, Game } from "../data/types";
 
 export function SetsPage() {
   const [sets, setSets] = useState<CardSet[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [disabledGames, setDisabledGames] = useState<Set<Game>>(() => new Set());
   const [disabledRegions, setDisabledRegions] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
@@ -37,15 +40,22 @@ export function SetsPage() {
 
   const tokens = useMemo(() => splitQuery(query), [query]);
 
-  // Regions come from the full unfiltered list, so toggling one off never removes its button.
+  // Games and regions come from the full unfiltered list, so toggling one off never removes its button.
+  const games = useMemo(() => (sets === null ? [] : getSetGames(sets)), [sets]);
   const regions = useMemo(() => (sets === null ? [] : getRegions(sets)), [sets]);
 
   const visibleSets = useMemo(() => {
     if (sets === null) {
       return [];
     }
-    return sets.filter((set) => !disabledRegions.has(set.region) && matchesAllTokens(set.title, tokens));
-  }, [sets, tokens, disabledRegions]);
+    return sets.filter(
+      (set) =>
+        // A set spanning several games stays visible while any one of them is on.
+        set.games.some((game) => !disabledGames.has(game)) &&
+        !disabledRegions.has(set.region) &&
+        matchesAllTokens(set.title, tokens),
+    );
+  }, [sets, tokens, disabledGames, disabledRegions]);
 
   let content: ReactNode;
   if (error !== null) {
@@ -54,6 +64,8 @@ export function SetsPage() {
     content = <p className="muted">Loading sets…</p>;
   } else if (sets.length === 0) {
     content = <p className="muted">No sets found.</p>;
+  } else if (games.every((game) => disabledGames.has(game))) {
+    content = <p className="muted">No games selected.</p>;
   } else if (regions.every((region) => disabledRegions.has(region))) {
     content = <p className="muted">No regions selected.</p>;
   } else if (visibleSets.length === 0) {
@@ -79,6 +91,11 @@ export function SetsPage() {
         onChange={setQuery}
         placeholder="Filter sets by title"
         label="Filter sets by title"
+      />
+      <GameToggles
+        games={games}
+        disabledGames={disabledGames}
+        onToggle={(game) => setDisabledGames(toggleGame(disabledGames, game))}
       />
       <RegionToggles
         regions={regions}
