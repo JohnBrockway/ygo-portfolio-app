@@ -11,14 +11,14 @@ export function RegionToggles({ regions, disabledRegions, onToggle }: RegionTogg
   }
 
   return (
-    <div className="region-toggles" role="group" aria-label="Filter by region">
+    <div className="filter-toggles" role="group" aria-label="Filter by region">
       {regions.map((region) => {
         const isOn = !disabledRegions.has(region);
         return (
           <button
             key={region}
             type="button"
-            className={isOn ? "region-toggle" : "region-toggle region-toggle-off"}
+            className={isOn ? "filter-toggle region-toggle" : "filter-toggle region-toggle filter-toggle-off"}
             aria-pressed={isOn}
             onClick={() => onToggle(region)}
           >

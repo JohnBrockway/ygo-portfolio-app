@@ -9,6 +9,9 @@ export interface ReleaseDate {
 // The fixed option list the pipeline validates against.
 export type Edition = "1st_edition" | "limited" | "unlimited";
 
+// Which game a card belongs to; the pipeline sets it from the wiki category the card came from.
+export type Game = "duel_monsters" | "rush_duel";
+
 export interface CardSet {
   set_id: string;
   page_id: number;
@@ -49,6 +52,7 @@ export interface Card {
   card_id: string;
   pageid: number;
   title: string;
+  game: Game;
   name_ja: string;
   konami_id: string;
   password: string;

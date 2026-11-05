@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { CardTile } from "../components/CardTile";
+import { GameToggles } from "../components/GameToggles";
 import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
+import { getGames, toggleGame } from "../data/games";
 import { loadMasterData } from "../data/masterData";
 import { getRegions, toggleRegion } from "../data/regions";
 import { matchesAllTokens, splitQuery } from "../data/search";
-import type { Card, MasterData } from "../data/types";
+import type { Card, Game, MasterData } from "../data/types";
 
 type SetRecord = MasterData["sets"][number];
 type PrintingRecord = MasterData["printings"][number];
@@ -131,6 +133,7 @@ function ResultSection({ title, total, children }: { title: string; total: numbe
 function CardSearch({ data }: { data: MasterData }) {
   const [query, setQuery] = useState("");
   const [disabledRegions, setDisabledRegions] = useState<Set<string>>(() => new Set());
+  const [disabledGames, setDisabledGames] = useState<Set<Game>>(() => new Set());
   const tokens = useMemo(() => splitQuery(query), [query]);
 
   const cardsById = useMemo(() => {
@@ -164,37 +167,50 @@ function CardSearch({ data }: { data: MasterData }) {
     [data]
   );
 
-  // Regions come from the full unfiltered data, so toggling one off never removes its button.
+  // Regions and games come from the full unfiltered data, so toggling one off never removes its button.
   const regions = useMemo(() => getRegions(data.sets), [data]);
+  const games = useMemo(() => getGames(data.cards), [data]);
   const regionsByCardId = useMemo(() => buildRegionsByCardId(data.printings, setsById), [data, setsById]);
 
   const cardMatches = useMemo(() => {
     if (tokens.length === 0) {
       return [];
     }
-    const matches = findCardMatches(sortedCards, tokens);
-    if (disabledRegions.size === 0) {
-      return matches;
+    let matches = findCardMatches(sortedCards, tokens);
+    if (disabledGames.size > 0) {
+      matches = matches.filter((card) => !disabledGames.has(card.game));
     }
-    return matches.filter((card) => hasEnabledRegion(regionsByCardId.get(card.card_id), disabledRegions));
-  }, [sortedCards, tokens, disabledRegions, regionsByCardId]);
+    if (disabledRegions.size > 0) {
+      matches = matches.filter((card) => hasEnabledRegion(regionsByCardId.get(card.card_id), disabledRegions));
+    }
+    return matches;
+  }, [sortedCards, tokens, disabledRegions, disabledGames, regionsByCardId]);
 
   const printingMatches = useMemo(() => {
     if (tokens.length === 0) {
       return [];
     }
-    const matches = findPrintingMatches(searchablePrintings, tokens);
-    if (disabledRegions.size === 0) {
-      return matches;
+    let matches = findPrintingMatches(searchablePrintings, tokens);
+    if (disabledGames.size > 0) {
+      // A printing belongs to its card's game, so it hides along with the card.
+      matches = matches.filter((printing) => {
+        const card = cardsById.get(printing.card_id);
+        return card === undefined || !disabledGames.has(card.game);
+      });
     }
-    return matches.filter((printing) => {
-      const set = setsById.get(printing.set_id);
-      return set === undefined || !disabledRegions.has(set.region);
-    });
-  }, [searchablePrintings, tokens, disabledRegions, setsById]);
+    if (disabledRegions.size > 0) {
+      matches = matches.filter((printing) => {
+        const set = setsById.get(printing.set_id);
+        return set === undefined || !disabledRegions.has(set.region);
+      });
+    }
+    return matches;
+  }, [searchablePrintings, tokens, disabledRegions, disabledGames, cardsById, setsById]);
 
   let results: ReactNode;
-  if (regions.length > 0 && regions.every((region) => disabledRegions.has(region))) {
+  if (games.length > 0 && games.every((game) => disabledGames.has(game))) {
+    results = <p className="muted">No games selected.</p>;
+  } else if (regions.length > 0 && regions.every((region) => disabledRegions.has(region))) {
     results = <p className="muted">No regions selected.</p>;
   } else if (tokens.length === 0) {
     // TODO show random sample cards when no query entered
@@ -239,6 +255,11 @@ function CardSearch({ data }: { data: MasterData }) {
         onChange={setQuery}
         placeholder="Search by card name or set number"
         label="Search by card name or set number"
+      />
+      <GameToggles
+        games={games}
+        disabledGames={disabledGames}
+        onToggle={(game) => setDisabledGames(toggleGame(disabledGames, game))}
       />
       <RegionToggles
         regions={regions}
