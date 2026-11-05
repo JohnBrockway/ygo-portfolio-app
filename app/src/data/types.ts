@@ -21,6 +21,7 @@ export interface CardSet {
     romaji?: string;
   };
   image: string;
+  thumb?: string;
   prefix: string | null;
   postfix: string | null;
   release_date: ReleaseDate | null;
@@ -41,6 +42,7 @@ export interface CardImage {
   index: string;
   file: string;
   art_only: boolean;
+  thumb?: string;
 }
 
 export interface Card {
