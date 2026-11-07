@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { CardTile } from "../components/CardTile";
 import { GameToggles } from "../components/GameToggles";
-import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
 import { getGames, toggleGame } from "../data/games";
@@ -14,6 +13,12 @@ import { useFilterParams } from "../data/useFilterParams";
 
 type SetRecord = MasterData["sets"][number];
 type PrintingRecord = MasterData["printings"][number];
+
+// A printing that matched the search, with the card it is a printing of (needed to show its tile).
+type PrintingMatch = {
+  printing: PrintingRecord;
+  card: Card;
+};
 
 // Keeps the DOM small; the heading shows the full match count.
 const MAX_RESULTS_PER_SECTION = 50;
@@ -88,35 +93,6 @@ function hasEnabledRegion(cardRegions: Set<string> | undefined, disabledRegions:
   return false;
 }
 
-function PrintingRow({
-  printing,
-  cardsById,
-  setsById,
-}: {
-  printing: PrintingRecord;
-  cardsById: Map<string, Card>;
-  setsById: Map<string, SetRecord>;
-}) {
-  const card = cardsById.get(printing.card_id);
-  const set = setsById.get(printing.set_id);
-  const cardName = card === undefined ? printing.card_id : card.title;
-  const setTitle = set === undefined ? printing.set_id : set.title;
-
-  return (
-    <li>
-      <LinkWithReturnInfo to={`/printings/${printing.printing_id}`} backLabel="card search" className="row">
-        <div className="row-title">{cardName}</div>
-        <div className="row-meta">
-          {set === undefined ? null : <span className="tag">{set.region}</span>}
-          {printing.set_number_synthetic ? null : <span>{printing.set_number}</span>}
-          <span className="tag">{printing.rarity}</span>
-          <span>{setTitle}</span>
-        </div>
-      </LinkWithReturnInfo>
-    </li>
-  );
-}
-
 function ResultSection({ title, total, children }: { title: string; total: number; children: ReactNode }) {
   return (
     <section>
@@ -186,20 +162,21 @@ function CardSearch({ data }: { data: MasterData }) {
     return matches;
   }, [sortedCards, tokens, disabledRegions, disabledGames, regionsByCardId]);
 
-  const printingMatches = useMemo(() => {
+    const printingMatches = useMemo(() => {
     if (tokens.length === 0) {
       return [];
     }
-    let matches = findPrintingMatches(searchablePrintings, tokens);
+    // A tile can't be shown without its card, so a printing without one is dropped here.
+    let matches = findPrintingMatches(searchablePrintings, tokens).flatMap((printing): PrintingMatch[] => {
+      const card = cardsById.get(printing.card_id);
+      return card === undefined ? [] : [{ printing, card }];
+    });
     if (disabledGames.size > 0) {
       // A printing belongs to its card's game, so it hides along with the card.
-      matches = matches.filter((printing) => {
-        const card = cardsById.get(printing.card_id);
-        return card === undefined || !disabledGames.has(card.game);
-      });
+      matches = matches.filter(({ card }) => !disabledGames.has(card.game));
     }
     if (disabledRegions.size > 0) {
-      matches = matches.filter((printing) => {
+      matches = matches.filter(({ printing }) => {
         const set = setsById.get(printing.set_id);
         return set === undefined || !disabledRegions.has(set.region);
       });
@@ -217,34 +194,23 @@ function CardSearch({ data }: { data: MasterData }) {
   } else if (cardMatches.length === 0 && printingMatches.length === 0) {
     results = <p className="muted">No cards or printings match “{query.trim()}”.</p>;
   } else {
+    const shownCards = cardMatches.slice(0, MAX_RESULTS_PER_SECTION);
+    const shownPrintings = printingMatches.slice(0, MAX_RESULTS_PER_SECTION - shownCards.length);
     results = (
-      <>
-        {cardMatches.length > 0 ? (
-          <ResultSection title="Cards" total={cardMatches.length}>
-            <ul className="tile-grid tile-grid-cards">
-              {cardMatches.slice(0, MAX_RESULTS_PER_SECTION).map((card) => (
-                <li key={card.card_id}>
-                  <CardTile card={card} />
-                </li>
-              ))}
-            </ul>
-          </ResultSection>
-        ) : null}
-        {printingMatches.length > 0 ? (
-          <ResultSection title="Printings" total={printingMatches.length}>
-            <ul className="row-list">
-              {printingMatches.slice(0, MAX_RESULTS_PER_SECTION).map((printing) => (
-                <PrintingRow
-                  key={printing.printing_id}
-                  printing={printing}
-                  cardsById={cardsById}
-                  setsById={setsById}
-                />
-              ))}
-            </ul>
-          </ResultSection>
-        ) : null}
-      </>
+      <ResultSection title="Results" total={cardMatches.length + printingMatches.length}>
+        <ul className="tile-grid tile-grid-cards">
+          {shownCards.map((card) => (
+            <li key={`card-${card.card_id}`}>
+              <CardTile card={card} />
+            </li>
+          ))}
+          {shownPrintings.map(({ printing, card }) => (
+            <li key={`printing-${printing.printing_id}`}>
+              <CardTile card={card} printing={printing} />
+            </li>
+          ))}
+        </ul>
+      </ResultSection>
     );
   }
 
