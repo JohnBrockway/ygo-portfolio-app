@@ -36,3 +36,8 @@ export function toggleGame(disabledGames: Set<Game>, game: Game): Set<Game> {
   }
   return next;
 }
+
+// True if a string from outside the app (e.g. the address bar) names a known game.
+export function isGame(value: string): value is Game {
+  return value in GAME_LABELS;
+}

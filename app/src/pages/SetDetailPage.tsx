@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { SetMeta } from "../components/SetMeta";
 import { loadMasterData } from "../data/masterData";
 import type { Card, MasterData } from "../data/types";
@@ -61,8 +61,14 @@ function SetPrintings({ data, setId }: { data: MasterData; setId: string | undef
 
 export function SetDetailPage() {
   const { setId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [data, setData] = useState<MasterData | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // The key is "default" on the first page of a visit (typed address, bookmark), where
+  // there is no earlier page to go back to.
+  const canGoBack = location.key !== "default";
 
   useEffect(() => {
     // Ignore the result if the page was left before the fetch finished.
@@ -97,7 +103,19 @@ export function SetDetailPage() {
   return (
     <>
       <p>
-        <Link to="/sets">Back to Sets</Link>
+        <Link
+          to="/sets"
+          onClick={(event) => {
+            // If we've been navigating around the app in this browser session, override the default
+            // "<Link> to /sets" behaviour of this node and instead return to the page we came from
+            if (canGoBack) {
+              event.preventDefault();
+              navigate(-1);
+            }
+          }}
+        >
+          Back to Sets
+        </Link>
       </p>
       {content}
     </>
