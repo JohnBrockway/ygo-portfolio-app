@@ -296,7 +296,61 @@ a {
   text-transform: uppercase;
 }
 
-/* Card tiles: portrait image area, matching the 360x480 thumbnails (art-only images letterbox inside it). */
+/* Card tiles: portrait image area, matching the 360x480 image files (art-only images letterbox inside it). */
 .tile-grid-cards {
   --tile-image-ratio: 3 / 4;
+}
+
+/* Card detail page: hero image, with a row of small images to choose between a card's images. */
+
+.card-hero {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+/* Fixed 3 / 4 box (matching the 360x480 image files) so the page doesn't jump when the image changes. */
+.card-hero img {
+  width: 100%;
+  max-width: 200px; /* the image files are 360 wide, so any larger would only blur them */
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.image-picker {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.image-picker button {
+  padding: 0;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.image-picker button:hover,
+.image-picker button:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+
+.image-picker button[aria-pressed="true"] {
+  border-color: var(--accent);
+  opacity: 1;
+}
+
+.image-picker img {
+  display: block;
+  width: 3rem;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
 }

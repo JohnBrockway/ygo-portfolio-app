@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
 import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
+import { getAvailableImages } from "../data/images";
+import type { AvailableImage } from "../data/images";
 import { loadMasterData } from "../data/masterData";
 import type { MasterData } from "../data/types";
 
@@ -46,6 +48,44 @@ function comparePrintingRows(a: PrintingRowData, b: PrintingRowData): number {
   }
   // numeric: true sorts "LOB-EN013" before "LOB-EN072".
   return a.printing.set_number.localeCompare(b.printing.set_number, undefined, { numeric: true });
+}
+
+// One large "hero" image, plus a row of small clickable images when there is more than one.
+function CardImages({ title, images }: { title: string; images: AvailableImage[] }) {
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const selected = images[selectedImageIndex];
+  if (selected === undefined) {
+    return null;
+  }
+
+  let picker: ReactNode = null;
+  if (images.length > 1) {
+    picker = (
+      <div className="image-picker">
+        {images.map((image, position) => (
+          <button
+            key={image.index}
+            type="button"
+            aria-label={`Image ${position + 1} of ${images.length}`}
+            aria-pressed={position === selectedImageIndex}
+            onClick={() => setSelectedImageIndex(position)}
+          >
+            <img src={image.url} alt="" />
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="card-hero">
+        <img src={selected.url} alt={title} />
+      </div>
+      {picker}
+    </>
+  );
 }
 
 function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | undefined }) {
@@ -108,6 +148,11 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
   return (
     <>
       <h1>{card.title}</h1>
+      {
+        /* key makes this unique across different cards, otherwise React would reuse the component
+          and thus the wrong images and index if navigating directly between card pages. */
+      }
+      <CardImages key={card.card_id} title={card.title} images={getAvailableImages(card)} />
       {list}
     </>
   );

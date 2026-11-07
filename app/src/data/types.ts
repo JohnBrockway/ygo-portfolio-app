@@ -24,8 +24,7 @@ export interface CardSet {
     romaji?: string;
   };
   games: Game[];
-  image: string;
-  thumb?: string;
+  image: string | null;
   prefix: string | null;
   postfix: string | null;
   release_date: ReleaseDate | null;
@@ -44,9 +43,8 @@ export interface Printing {
 
 export interface CardImage {
   index: string;
-  file: string;
+  file: string | null;
   art_only: boolean;
-  thumb?: string;
 }
 
 export interface Card {
