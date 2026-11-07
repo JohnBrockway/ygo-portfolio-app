@@ -104,7 +104,7 @@ function PrintingRow({
 
   return (
     <li>
-      <LinkWithReturnInfo to={`/printings/${printing.printing_id}`} backLabel="Cards" className="row">
+      <LinkWithReturnInfo to={`/printings/${printing.printing_id}`} backLabel="card search" className="row">
         <div className="row-title">{cardName}</div>
         <div className="row-meta">
           {set === undefined ? null : <span className="tag">{set.region}</span>}

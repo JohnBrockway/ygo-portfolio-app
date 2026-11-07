@@ -131,7 +131,7 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
       <ul className="row-list">
         {rows.map((row) => (
           <li key={row.printing.printing_id}>
-            <LinkWithReturnInfo to={`/printings/${row.printing.printing_id}`} backLabel="Card" className="row">
+            <LinkWithReturnInfo to={`/printings/${row.printing.printing_id}`} backLabel={card.title} className="row">
               <div className="row-title">{row.setTitle}</div>
               <div className="row-meta">
                 {row.region === "" ? null : <span className="tag">{row.region}</span>}

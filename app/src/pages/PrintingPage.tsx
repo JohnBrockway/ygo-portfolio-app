@@ -47,6 +47,12 @@ function PrintingDetail({ data, printingId }: { data: MasterData; printingId: st
   const cardTitle = card === undefined ? printing.card_id : card.title;
   const setTitle = set === undefined ? printing.set_id : set.title;
   const editions: Edition[] = set === undefined ? [] : set.editions;
+  let returnLabel;
+  if (printing.set_number_synthetic) {
+    returnLabel = card === undefined ? "printing" : card.title;
+  } else {
+    returnLabel = printing.set_number;
+  }
 
   return (
     <>
@@ -54,7 +60,7 @@ function PrintingDetail({ data, printingId }: { data: MasterData; printingId: st
         {card === undefined ? (
           cardTitle
         ) : (
-          <LinkWithReturnInfo to={`/cards/${card.card_id}`} backLabel="Printing">
+          <LinkWithReturnInfo to={`/cards/${card.card_id}`} backLabel={returnLabel}>
             {cardTitle}
           </LinkWithReturnInfo>
         )}
@@ -63,7 +69,7 @@ function PrintingDetail({ data, printingId }: { data: MasterData; printingId: st
         {set === undefined ? (
           setTitle
         ) : (
-          <LinkWithReturnInfo to={`/sets/${set.set_id}`} backLabel="Printing">
+          <LinkWithReturnInfo to={`/sets/${set.set_id}`} backLabel={returnLabel}>
             {setTitle}
           </LinkWithReturnInfo>
         )}

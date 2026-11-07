@@ -5,7 +5,7 @@ import { TileImage } from "./TileImage";
 
 export function SetTile({ set }: { set: CardSet }) {
   return (
-    <LinkWithReturnInfo to={`/sets/${set.set_id}`} backLabel="Sets" className="tile" title={set.title}>
+    <LinkWithReturnInfo to={`/sets/${set.set_id}`} backLabel="set search" className="tile" title={set.title}>
       <TileImage imageUrl={setImageUrl(set)} />
       <div className="tile-body">
         <div className="tile-title">{set.title}</div>

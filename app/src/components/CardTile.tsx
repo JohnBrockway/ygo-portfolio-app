@@ -5,7 +5,7 @@ import { TileImage } from "./TileImage";
 
 export function CardTile({ card }: { card: Card }) {
   return (
-    <LinkWithReturnInfo to={`/cards/${card.card_id}`} backLabel="Cards" className="tile" title={card.title}>
+    <LinkWithReturnInfo to={`/cards/${card.card_id}`} backLabel="card search" className="tile" title={card.title}>
       <TileImage imageUrl={getDefaultImageUrl(card)} />
       <div className="tile-body">
         <div className="tile-title">{card.title}</div>
