@@ -9,7 +9,8 @@ import { getGames, toggleGame } from "../data/games";
 import { loadMasterData } from "../data/masterData";
 import { getRegions, toggleRegion } from "../data/regions";
 import { matchesAllTokens, splitQuery } from "../data/search";
-import type { Card, Game, MasterData } from "../data/types";
+import type { Card, MasterData } from "../data/types";
+import { useFilterParams } from "../data/useFilterParams";
 
 type SetRecord = MasterData["sets"][number];
 type PrintingRecord = MasterData["printings"][number];
@@ -131,9 +132,8 @@ function ResultSection({ title, total, children }: { title: string; total: numbe
 }
 
 function CardSearch({ data }: { data: MasterData }) {
-  const [query, setQuery] = useState("");
-  const [disabledRegions, setDisabledRegions] = useState<Set<string>>(() => new Set());
-  const [disabledGames, setDisabledGames] = useState<Set<Game>>(() => new Set());
+  const { query, disabledGames, disabledRegions, setSearchQuery, setDisabledGames, setDisabledRegions } =
+    useFilterParams();
   const tokens = useMemo(() => splitQuery(query), [query]);
 
   const cardsById = useMemo(() => {
@@ -252,7 +252,7 @@ function CardSearch({ data }: { data: MasterData }) {
     <>
       <SearchBar
         value={query}
-        onChange={setQuery}
+        onChange={setSearchQuery}
         placeholder="Search by card name or set number"
         label="Search by card name or set number"
       />

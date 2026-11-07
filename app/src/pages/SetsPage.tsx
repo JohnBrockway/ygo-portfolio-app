@@ -1,59 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
 import { GameToggles } from "../components/GameToggles";
 import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
 import { SetTile } from "../components/SetTile";
-import { getSetGames, isGame, toggleGame } from "../data/games";
+import { getSetGames, toggleGame } from "../data/games";
 import { loadSets } from "../data/masterData";
 import { getRegions, toggleRegion } from "../data/regions";
 import { matchesAllTokens, splitQuery } from "../data/search";
 import type { CardSet } from "../data/types";
-
-// The filters live in the address bar (e.g. /sets?q=dark&hideGame=rush_duel&hideRegion=jp),
-// so going back from a set's page lands on exactly the filtered list that was left.
-// Nothing in the URL means everything is on and the search is empty.
-const QUERY_PARAM = "q";
-const HIDDEN_GAME_PARAM = "hideGame";
-const HIDDEN_REGION_PARAM = "hideRegion";
+import { useFilterParams } from "../data/useFilterParams";
 
 export function SetsPage() {
   const [sets, setSets] = useState<CardSet[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const query = searchParams.get(QUERY_PARAM) ?? "";
-  const disabledGames = useMemo(
-    () => new Set(searchParams.getAll(HIDDEN_GAME_PARAM).filter(isGame)),
-    [searchParams],
-  );
-  const disabledRegions = useMemo(
-    () => new Set(searchParams.getAll(HIDDEN_REGION_PARAM)),
-    [searchParams],
-  );
-
-  // Sets one URL parameter to a list of values (an empty list removes it).
-  // Replaces the current history entry instead of adding one, so typing
-  // doesn't make the Back button step through each letter.
-  function setParamValues(param: string, values: Iterable<string>) {
-    setSearchParams(
-      (previous) => {
-        const next = new URLSearchParams(previous);
-        next.delete(param);
-        // Sorted so the same filters always give the same URL.
-        for (const value of Array.from(values).sort()) {
-          next.append(param, value);
-        }
-        return next;
-      },
-      { replace: true },
-    );
-  }
-
-  function setSearchQuery(value: string) {
-    setParamValues(QUERY_PARAM, value === "" ? [] : [value]);
-  }
+  const { query, disabledGames, disabledRegions, setSearchQuery, setDisabledGames, setDisabledRegions } =
+    useFilterParams();
 
   useEffect(() => {
     // Ignore the result if the page was left before the fetch finished.
@@ -133,12 +95,12 @@ export function SetsPage() {
       <GameToggles
         games={games}
         disabledGames={disabledGames}
-        onToggle={(game) => setParamValues(HIDDEN_GAME_PARAM, toggleGame(disabledGames, game))}
+        onToggle={(game) => setDisabledGames(toggleGame(disabledGames, game))}
       />
       <RegionToggles
         regions={regions}
         disabledRegions={disabledRegions}
-        onToggle={(region) => setParamValues(HIDDEN_REGION_PARAM, toggleRegion(disabledRegions, region))}
+        onToggle={(region) => setDisabledRegions(toggleRegion(disabledRegions, region))}
       />
       {content}
     </>
