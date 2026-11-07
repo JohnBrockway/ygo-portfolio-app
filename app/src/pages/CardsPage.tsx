@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
 import { CardTile } from "../components/CardTile";
 import { GameToggles } from "../components/GameToggles";
+import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
 import { getGames, toggleGame } from "../data/games";
@@ -103,7 +103,7 @@ function PrintingRow({
 
   return (
     <li>
-      <Link to={`/printings/${printing.printing_id}`} className="row">
+      <LinkWithReturnInfo to={`/printings/${printing.printing_id}`} backLabel="Cards" className="row">
         <div className="row-title">{cardName}</div>
         <div className="row-meta">
           {set === undefined ? null : <span className="tag">{set.region}</span>}
@@ -111,7 +111,7 @@ function PrintingRow({
           <span className="tag">{printing.rarity}</span>
           <span>{setTitle}</span>
         </div>
-      </Link>
+      </LinkWithReturnInfo>
     </li>
   );
 }

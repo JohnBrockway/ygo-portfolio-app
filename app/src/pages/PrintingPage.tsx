@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { BackLink } from "../components/BackLink";
+import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { editionLabel } from "../data/editions";
 import { loadMasterData } from "../data/masterData";
 import type { Edition, MasterData } from "../data/types";
@@ -49,9 +51,23 @@ function PrintingDetail({ data, printingId }: { data: MasterData; printingId: st
   return (
     <>
       <h1>
-        {card === undefined ? cardTitle : <Link to={`/cards/${card.card_id}`}>{cardTitle}</Link>}
+        {card === undefined ? (
+          cardTitle
+        ) : (
+          <LinkWithReturnInfo to={`/cards/${card.card_id}`} backLabel="Printing">
+            {cardTitle}
+          </LinkWithReturnInfo>
+        )}
       </h1>
-      <p>{set === undefined ? setTitle : <Link to={`/sets/${set.set_id}`}>{setTitle}</Link>}</p>
+      <p>
+        {set === undefined ? (
+          setTitle
+        ) : (
+          <LinkWithReturnInfo to={`/sets/${set.set_id}`} backLabel="Printing">
+            {setTitle}
+          </LinkWithReturnInfo>
+        )}
+      </p>
       <div className="row-meta">
         {set === undefined ? null : <span className="tag">{set.region}</span>}
         {printing.set_number_synthetic ? null : <span>{printing.set_number}</span>}
@@ -101,7 +117,7 @@ export function PrintingPage() {
   return (
     <>
       <p>
-        <Link to="/cards">Back to Cards</Link>
+        <BackLink fallbackTo="/cards" fallbackLabel="Cards" />
       </p>
       {content}
     </>

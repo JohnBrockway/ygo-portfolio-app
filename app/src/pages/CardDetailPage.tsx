@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { BackLink } from "../components/BackLink";
+import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { loadMasterData } from "../data/masterData";
 import type { MasterData } from "../data/types";
 
@@ -89,14 +91,14 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
       <ul className="row-list">
         {rows.map((row) => (
           <li key={row.printing.printing_id}>
-            <Link to={`/printings/${row.printing.printing_id}`} className="row">
+            <LinkWithReturnInfo to={`/printings/${row.printing.printing_id}`} backLabel="Card" className="row">
               <div className="row-title">{row.setTitle}</div>
               <div className="row-meta">
                 {row.region === "" ? null : <span className="tag">{row.region}</span>}
                 {row.printing.set_number_synthetic ? null : <span>{row.printing.set_number}</span>}
                 <span className="tag">{row.printing.rarity}</span>
               </div>
-            </Link>
+            </LinkWithReturnInfo>
           </li>
         ))}
       </ul>
@@ -149,7 +151,7 @@ export function CardDetailPage() {
   return (
     <>
       <p>
-        <Link to="/cards">Back to Cards</Link>
+        <BackLink fallbackTo="/cards" fallbackLabel="Cards" />
       </p>
       {content}
     </>
