@@ -7,11 +7,11 @@ import { SetMeta } from "../components/SetMeta";
 import { loadMasterData } from "../data/masterData";
 import type { Card, MasterData } from "../data/types";
 
-type SetCodeRecord = MasterData["setcodes"][number];
+type SetcodeRecord = MasterData["setcodes"][number];
 
 // A setcode of this set with the card it belongs to (needed to show its tile).
-type SetCodeWithCard = {
-  setcode: SetCodeRecord;
+type SetcodeWithCard = {
+  setcode: SetcodeRecord;
   card: Card;
 };
 
@@ -37,7 +37,7 @@ function SetPrintings({ data, setId }: { data: MasterData; setId: string | undef
   const setcodes = data.setcodes
     .filter((setcode) => setcode.set_id === set.set_id)
     .sort((a, b) => a.set_number.localeCompare(b.set_number, undefined, { numeric: true }))
-    .flatMap((setcode): SetCodeWithCard[] => {
+    .flatMap((setcode): SetcodeWithCard[] => {
       const card = cardsById.get(setcode.card_id);
       return card === undefined ? [] : [{ setcode, card }];
     });
@@ -50,7 +50,12 @@ function SetPrintings({ data, setId }: { data: MasterData; setId: string | undef
       <ul className="tile-grid tile-grid-cards">
         {setcodes.map(({ setcode, card }) => (
           <li key={setcode.setcode_id}>
-            <CardTile card={card} setcode={setcode} backLabel={set.title} />
+            <CardTile
+              card={card}
+              setcode={setcode}
+              printingCount={setcode.printings.length}
+              backLabel={set.title}
+            />
           </li>
         ))}
       </ul>
