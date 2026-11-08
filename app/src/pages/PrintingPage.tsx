@@ -7,7 +7,7 @@ import { editionLabel } from "../data/editions";
 import { loadMasterData } from "../data/masterData";
 import type { Edition, MasterData } from "../data/types";
 
-// One row per edition this printing exists in. TODO this is where the owned counter goes.
+// One row per edition the set has. TODO this is where the owned counter goes.
 function EditionRows({ editions }: { editions: Edition[] }) {
   if (editions.length === 0) {
     return (
@@ -30,9 +30,9 @@ function EditionRows({ editions }: { editions: Edition[] }) {
   );
 }
 
-function PrintingDetail({ data, printingId }: { data: MasterData; printingId: string | undefined }) {
-  const printing = data.printings.find((candidate) => candidate.printing_id === printingId);
-  if (printing === undefined) {
+function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: string | undefined }) {
+  const setcode = data.setcodes.find((candidate) => candidate.setcode_id === setcodeId);
+  if (setcode === undefined) {
     return (
       <>
         <h1>Printing not found</h1>
@@ -42,16 +42,16 @@ function PrintingDetail({ data, printingId }: { data: MasterData; printingId: st
   }
 
   // Either record can be missing in the data; fall back to ids instead of breaking the page.
-  const card = data.cards.find((candidate) => candidate.card_id === printing.card_id);
-  const set = data.sets.find((candidate) => candidate.set_id === printing.set_id);
-  const cardTitle = card === undefined ? printing.card_id : card.title;
-  const setTitle = set === undefined ? printing.set_id : set.title;
+  const card = data.cards.find((candidate) => candidate.card_id === setcode.card_id);
+  const set = data.sets.find((candidate) => candidate.set_id === setcode.set_id);
+  const cardTitle = card === undefined ? setcode.card_id : card.title;
+  const setTitle = set === undefined ? setcode.set_id : set.title;
   const editions: Edition[] = set === undefined ? [] : set.editions;
   let returnLabel;
-  if (printing.set_number_synthetic) {
+  if (setcode.set_number_synthetic) {
     returnLabel = card === undefined ? "printing" : card.title;
   } else {
-    returnLabel = printing.set_number;
+    returnLabel = setcode.set_number;
   }
 
   return (
@@ -76,17 +76,20 @@ function PrintingDetail({ data, printingId }: { data: MasterData; printingId: st
       </p>
       <div className="row-meta">
         {set === undefined ? null : <span className="tag">{set.region}</span>}
-        {printing.set_number_synthetic ? null : <span>{printing.set_number}</span>}
-        <span className="tag">{printing.rarity}</span>
+        {setcode.set_number_synthetic ? null : <span>{setcode.set_number}</span>}
       </div>
-      <h2>Editions</h2>
-      <EditionRows editions={editions} />
+      {setcode.printings.map((printing) => (
+        <section key={printing.printing_id}>
+          <h2>{printing.rarity}</h2>
+          <EditionRows editions={editions} />
+        </section>
+      ))}
     </>
   );
 }
 
 export function PrintingPage() {
-  const { printingId } = useParams();
+  const { setcodeId } = useParams();
   const [data, setData] = useState<MasterData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,7 +120,7 @@ export function PrintingPage() {
   } else if (data === null) {
     content = <p className="muted">Loading printing…</p>;
   } else {
-    content = <PrintingDetail data={data} printingId={printingId} />;
+    content = <PrintingDetail data={data} setcodeId={setcodeId} />;
   }
 
   return (

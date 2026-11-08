@@ -9,11 +9,11 @@ import { loadMasterData } from "../data/masterData";
 import type { MasterData } from "../data/types";
 
 type SetRecord = MasterData["sets"][number];
-type PrintingRecord = MasterData["printings"][number];
+type SetCodeRecord = MasterData["setcodes"][number];
 
-// A printing plus the set info we need to display and sort it.
-type PrintingRowData = {
-  printing: PrintingRecord;
+// A setcode plus the set info we need to display and sort it.
+type SetCodeRowData = {
+  setcode: SetCodeRecord;
   releaseDate: string | null;
   region: string;
   setTitle: string;
@@ -33,7 +33,7 @@ function compareReleaseDates(a: string | null, b: string | null): number {
   return a.localeCompare(b);
 }
 
-function comparePrintingRows(a: PrintingRowData, b: PrintingRowData): number {
+function compareSetCodeRows(a: SetCodeRowData, b: SetCodeRowData): number {
   const byDate = compareReleaseDates(a.releaseDate, b.releaseDate);
   if (byDate !== 0) {
     return byDate;
@@ -46,8 +46,8 @@ function comparePrintingRows(a: PrintingRowData, b: PrintingRowData): number {
   if (byTitle !== 0) {
     return byTitle;
   }
-  // numeric: true sorts "LOB-EN013" before "LOB-EN072".
-  return a.printing.set_number.localeCompare(b.printing.set_number, undefined, { numeric: true });
+  // numeric: true sorts "LB-9" before "LB-10".
+  return a.setcode.set_number.localeCompare(b.setcode.set_number, undefined, { numeric: true });
 }
 
 // One large "hero" image, plus a row of small clickable images when there is more than one.
@@ -104,24 +104,24 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
     setsById.set(set.set_id, set);
   }
 
-  const rows: PrintingRowData[] = [];
-  for (const printing of data.printings) {
-    if (printing.card_id !== card.card_id) {
+  const rows: SetCodeRowData[] = [];
+  for (const setcode of data.setcodes) {
+    if (setcode.card_id !== card.card_id) {
       continue;
     }
-    const set = setsById.get(printing.set_id);
+    const set = setsById.get(setcode.set_id);
     let releaseDate: string | null = null;
     if (set !== undefined && set.release_date) {
       releaseDate = set.release_date.iso;
     }
     rows.push({
-      printing,
+      setcode,
       releaseDate,
       region: set === undefined ? "" : set.region,
-      setTitle: set === undefined ? printing.set_id : set.title,
+      setTitle: set === undefined ? setcode.set_id : set.title,
     });
   }
-  rows.sort(comparePrintingRows);
+  rows.sort(compareSetCodeRows);
 
   let list: ReactNode;
   if (rows.length === 0) {
@@ -130,13 +130,17 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
     list = (
       <ul className="row-list">
         {rows.map((row) => (
-          <li key={row.printing.printing_id}>
-            <LinkWithReturnInfo to={`/printings/${row.printing.printing_id}`} backLabel={card.title} className="row">
+          <li key={row.setcode.setcode_id}>
+            <LinkWithReturnInfo to={`/printings/${row.setcode.setcode_id}`} backLabel={card.title} className="row">
               <div className="row-title">{row.setTitle}</div>
               <div className="row-meta">
                 {row.region === "" ? null : <span className="tag">{row.region}</span>}
-                {row.printing.set_number_synthetic ? null : <span>{row.printing.set_number}</span>}
-                <span className="tag">{row.printing.rarity}</span>
+                {row.setcode.set_number_synthetic ? null : <span>{row.setcode.set_number}</span>}
+                {row.setcode.printings.map((printing) => (
+                  <span key={printing.printing_id} className="tag">
+                    {printing.rarity}
+                  </span>
+                ))}
               </div>
             </LinkWithReturnInfo>
           </li>

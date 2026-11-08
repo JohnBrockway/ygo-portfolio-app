@@ -20,7 +20,7 @@ export default function App() {
           <Route path="/sets/:setId" element={<SetDetailPage />} />
           <Route path="/cards" element={<CardsPage />} />
           <Route path="/cards/:cardId" element={<CardDetailPage />} />
-          <Route path="/printings/:printingId" element={<PrintingPage />} />
+          <Route path="/printings/:setcodeId" element={<PrintingPage />} />
           <Route path="/lists" element={<ListsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFoundPage />} />

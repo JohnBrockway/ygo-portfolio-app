@@ -1,5 +1,5 @@
 import { DATA_BASE_URL } from "../config";
-import type { Card, CardSet, MasterData, Printing } from "./types";
+import type { Card, CardSet, MasterData, SetCode } from "./types";
 
 async function fetchJson<T>(fileName: string): Promise<T> {
   const response = await fetch(`${DATA_BASE_URL}/${fileName}`);
@@ -16,10 +16,10 @@ export function loadSets(): Promise<CardSet[]> {
 
 // Everything the app needs to show a set's printings.
 export async function loadMasterData(): Promise<MasterData> {
-  const [sets, printings, cards] = await Promise.all([
+  const [sets, setcodes, cards] = await Promise.all([
     loadSets(),
-    fetchJson<Printing[]>("printings.json"),
+    fetchJson<SetCode[]>("printings.json"),
     fetchJson<Card[]>("cards.json"),
   ]);
-  return { sets, printings, cards };
+  return { sets, setcodes, cards };
 }

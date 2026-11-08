@@ -29,16 +29,23 @@ export interface CardSet {
   postfix: string | null;
   release_date: ReleaseDate | null;
   editions: Edition[];
-  printing_count: number;
+  // Currently shows unique setcodes (i.e. different rarities, artworks, editions are collapsed)
+  setcode_count: number;
 }
 
+// One version of a card within a setcode, by rarity (art later). This is what gets marked owned or wanted.
 export interface Printing {
   printing_id: string;
+  rarity: string;
+}
+
+export interface SetCode {
+  setcode_id: string;
   card_id: string;
   set_id: string;
   set_number: string;
   set_number_synthetic: boolean;
-  rarity: string;
+  printings: Printing[];
 }
 
 export interface CardImage {
@@ -61,6 +68,6 @@ export interface Card {
 
 export interface MasterData {
   sets: CardSet[];
-  printings: Printing[];
+  setcodes: SetCode[];
   cards: Card[];
 }

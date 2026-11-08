@@ -24,25 +24,29 @@ function SetPrintings({ data, setId }: { data: MasterData; setId: string | undef
 
   // Synthetic set numbers are never shown, but still keep the rows in a sensible order.
   // numeric: true sorts "LOB-EN013" before "LOB-EN072" and "LB-9" before "LB-10".
-  const printings = data.printings
-    .filter((printing) => printing.set_id === set.set_id)
+  const setcodes = data.setcodes
+    .filter((setcode) => setcode.set_id === set.set_id)
     .sort((a, b) => a.set_number.localeCompare(b.set_number, undefined, { numeric: true }));
 
   let list: ReactNode;
-  if (printings.length === 0) {
+  if (setcodes.length === 0) {
     list = <p className="muted">No printings in this set.</p>;
   } else {
     list = (
       <ul className="row-list">
-        {printings.map((printing) => {
-          const card = cardsById.get(printing.card_id);
-          const cardName = card === undefined ? printing.card_id : card.title;
+        {setcodes.map((setcode) => {
+          const card = cardsById.get(setcode.card_id);
+          const cardName = card === undefined ? setcode.card_id : card.title;
           return (
-            <li key={printing.printing_id} className="row">
+            <li key={setcode.setcode_id} className="row">
               <div className="row-title">{cardName}</div>
               <div className="row-meta">
-                {printing.set_number_synthetic ? null : <span>{printing.set_number}</span>}
-                <span className="tag">{printing.rarity}</span>
+                {setcode.set_number_synthetic ? null : <span>{setcode.set_number}</span>}
+                {setcode.printings.map((printing) => (
+                  <span key={printing.printing_id} className="tag">
+                    {printing.rarity}
+                  </span>
+                ))}
               </div>
             </li>
           );

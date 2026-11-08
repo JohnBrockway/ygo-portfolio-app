@@ -12,11 +12,11 @@ import type { Card, MasterData } from "../data/types";
 import { useFilterParams } from "../data/useFilterParams";
 
 type SetRecord = MasterData["sets"][number];
-type PrintingRecord = MasterData["printings"][number];
+type SetCodeRecord = MasterData["setcodes"][number];
 
-// A printing that matched the search, with the card it is a printing of (needed to show its tile).
-type PrintingMatch = {
-  printing: PrintingRecord;
+// A setcode that matched the search, with the card it is a printing of (needed to show its tile).
+type SetCodeMatch = {
+  setcode: SetCodeRecord;
   card: Card;
 };
 
@@ -49,12 +49,12 @@ function findCardMatches(sortedCards: Card[], tokens: string[]): Card[] {
   return prefixMatches.concat(otherMatches);
 }
 
-// Callers pass printings already sorted by set number, with synthetic numbers removed.
-function findPrintingMatches(sortedPrintings: PrintingRecord[], tokens: string[]): PrintingRecord[] {
-  const matches: PrintingRecord[] = [];
-  for (const printing of sortedPrintings) {
-    if (matchesAllTokens(printing.set_number, tokens)) {
-      matches.push(printing);
+// Callers pass setcodes already sorted, with synthetic numbers removed.
+function findSetCodeMatches(sortedSetcodes: SetCodeRecord[], tokens: string[]): SetCodeRecord[] {
+  const matches: SetCodeRecord[] = [];
+  for (const setcode of sortedSetcodes) {
+    if (matchesAllTokens(setcode.set_number, tokens)) {
+      matches.push(setcode);
     }
   }
   return matches;
@@ -62,19 +62,19 @@ function findPrintingMatches(sortedPrintings: PrintingRecord[], tokens: string[]
 
 // The full list of regions any visible result has printings in. Built once per data load.
 function buildRegionsByCardId(
-  printings: PrintingRecord[],
+  setcodes: SetCodeRecord[],
   setsById: Map<string, SetRecord>
 ): Map<string, Set<string>> {
   const map = new Map<string, Set<string>>();
-  for (const printing of printings) {
-    const set = setsById.get(printing.set_id);
+  for (const setcode of setcodes) {
+    const set = setsById.get(setcode.set_id);
     if (set === undefined) {
       continue;
     }
-    let cardRegions = map.get(printing.card_id);
+    let cardRegions = map.get(setcode.card_id);
     if (cardRegions === undefined) {
       cardRegions = new Set<string>();
-      map.set(printing.card_id, cardRegions);
+      map.set(setcode.card_id, cardRegions);
     }
     cardRegions.add(set.region);
   }
@@ -135,10 +135,10 @@ function CardSearch({ data }: { data: MasterData }) {
   );
 
   // Synthetic set numbers are never shown, so they must not be searchable either.
-  const searchablePrintings = useMemo(
+  const searchableSetCodes = useMemo(
     () =>
-      data.printings
-        .filter((printing) => !printing.set_number_synthetic)
+      data.setcodes
+        .filter((setcode) => !setcode.set_number_synthetic)
         .sort((a, b) => setNumberCollator.compare(a.set_number, b.set_number)),
     [data]
   );
@@ -146,7 +146,7 @@ function CardSearch({ data }: { data: MasterData }) {
   // Regions and games come from the full unfiltered data, so toggling one off never removes its button.
   const regions = useMemo(() => getRegions(data.sets), [data]);
   const games = useMemo(() => getGames(data.cards), [data]);
-  const regionsByCardId = useMemo(() => buildRegionsByCardId(data.printings, setsById), [data, setsById]);
+  const regionsByCardId = useMemo(() => buildRegionsByCardId(data.setcodes, setsById), [data, setsById]);
 
   const cardMatches = useMemo(() => {
     if (tokens.length === 0) {
@@ -162,27 +162,27 @@ function CardSearch({ data }: { data: MasterData }) {
     return matches;
   }, [sortedCards, tokens, disabledRegions, disabledGames, regionsByCardId]);
 
-    const printingMatches = useMemo(() => {
+  const setCodeMatches = useMemo(() => {
     if (tokens.length === 0) {
       return [];
     }
-    // A tile can't be shown without its card, so a printing without one is dropped here.
-    let matches = findPrintingMatches(searchablePrintings, tokens).flatMap((printing): PrintingMatch[] => {
-      const card = cardsById.get(printing.card_id);
-      return card === undefined ? [] : [{ printing, card }];
+    // A tile can't be shown without its card, so a setcode without one is dropped here.
+    let matches = findSetCodeMatches(searchableSetCodes, tokens).flatMap((setcode): SetCodeMatch[] => {
+      const card = cardsById.get(setcode.card_id);
+      return card === undefined ? [] : [{ setcode, card }];
     });
     if (disabledGames.size > 0) {
-      // A printing belongs to its card's game, so it hides along with the card.
+      // A setcode belongs to its card's game, so it hides along with the card.
       matches = matches.filter(({ card }) => !disabledGames.has(card.game));
     }
     if (disabledRegions.size > 0) {
-      matches = matches.filter(({ printing }) => {
-        const set = setsById.get(printing.set_id);
+      matches = matches.filter(({ setcode }) => {
+        const set = setsById.get(setcode.set_id);
         return set === undefined || !disabledRegions.has(set.region);
       });
     }
     return matches;
-  }, [searchablePrintings, tokens, disabledRegions, disabledGames, cardsById, setsById]);
+  }, [searchableSetCodes, tokens, disabledRegions, disabledGames, cardsById, setsById]);
 
   let results: ReactNode;
   if (games.length > 0 && games.every((game) => disabledGames.has(game))) {
@@ -191,22 +191,22 @@ function CardSearch({ data }: { data: MasterData }) {
     results = <p className="muted">No regions selected.</p>;
   } else if (tokens.length === 0) {
     // TODO show random sample cards when no query entered
-  } else if (cardMatches.length === 0 && printingMatches.length === 0) {
+  } else if (cardMatches.length === 0 && setCodeMatches.length === 0) {
     results = <p className="muted">No cards or printings match “{query.trim()}”.</p>;
   } else {
     const shownCards = cardMatches.slice(0, MAX_RESULTS_PER_SECTION);
-    const shownPrintings = printingMatches.slice(0, MAX_RESULTS_PER_SECTION - shownCards.length);
+    const shownSetCodes = setCodeMatches.slice(0, MAX_RESULTS_PER_SECTION - shownCards.length);
     results = (
-      <ResultSection title="Results" total={cardMatches.length + printingMatches.length}>
+      <ResultSection title="Results" total={cardMatches.length + setCodeMatches.length}>
         <ul className="tile-grid tile-grid-cards">
           {shownCards.map((card) => (
             <li key={`card-${card.card_id}`}>
               <CardTile card={card} />
             </li>
           ))}
-          {shownPrintings.map(({ printing, card }) => (
-            <li key={`printing-${printing.printing_id}`}>
-              <CardTile card={card} printing={printing} />
+          {shownSetCodes.map(({ setcode, card }) => (
+            <li key={`setcode-${setcode.setcode_id}`}>
+              <CardTile card={card} setcode={setcode} />
             </li>
           ))}
         </ul>

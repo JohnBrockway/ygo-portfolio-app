@@ -11,7 +11,7 @@ export function SetMeta({ set }: { set: CardSet }) {
     <div className="row-meta">
       <span className="tag">{set.region.toUpperCase()}</span>
       <span>{dateText}</span>
-      <span>{formatPrintingCount(set.printing_count)}</span>
+      <span>{formatPrintingCount(set.setcode_count)}</span>
     </div>
   );
 }
