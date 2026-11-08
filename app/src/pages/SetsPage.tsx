@@ -75,7 +75,7 @@ export function SetsPage() {
       <ul className="tile-grid">
         {visibleSets.map((set) => (
           <li key={set.set_id}>
-            <SetTile set={set} />
+            <SetTile set={set} backLabel="set search" />
           </li>
         ))}
       </ul>

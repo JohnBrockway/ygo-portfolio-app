@@ -23,6 +23,9 @@ type SetCodeMatch = {
 // Keeps the DOM small; the heading shows the full match count.
 const MAX_RESULTS_PER_SECTION = 50;
 
+// This page's name in the Back links of the pages its tiles open.
+const BACK_LABEL = "card search";
+
 // Shared collators: calling localeCompare with options builds a new collator on every call,
 // which is far slower than reusing one. numeric: true sorts "LOB-EN013" before "LOB-EN072".
 const titleCollator = new Intl.Collator();
@@ -201,12 +204,12 @@ function CardSearch({ data }: { data: MasterData }) {
         <ul className="tile-grid tile-grid-cards">
           {shownCards.map((card) => (
             <li key={`card-${card.card_id}`}>
-              <CardTile card={card} />
+              <CardTile card={card} backLabel={BACK_LABEL} />
             </li>
           ))}
           {shownSetCodes.map(({ setcode, card }) => (
             <li key={`setcode-${setcode.setcode_id}`}>
-              <CardTile card={card} setcode={setcode} />
+              <CardTile card={card} setcode={setcode} backLabel={BACK_LABEL} />
             </li>
           ))}
         </ul>

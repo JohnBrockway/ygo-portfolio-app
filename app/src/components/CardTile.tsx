@@ -4,7 +4,7 @@ import type { Card, SetCode } from "../data/types";
 import { LinkWithReturnInfo } from "./LinkWithReturnInfo";
 import { TileImage } from "./TileImage";
 
-export function CardTile({ card, setcode }: { card: Card; setcode?: SetCode }) {
+export function CardTile({ card, setcode, backLabel }: { card: Card; setcode?: SetCode; backLabel: string }) {
   let to = `/cards/${card.card_id}`;
 
   // For printings, link directly to the printing page and show the set number.
@@ -15,7 +15,7 @@ export function CardTile({ card, setcode }: { card: Card; setcode?: SetCode }) {
   }
 
   return (
-    <LinkWithReturnInfo to={to} backLabel="card search" className="tile" title={card.title}>
+    <LinkWithReturnInfo to={to} backLabel={backLabel} className="tile" title={card.title}>
       <TileImage imageUrl={getDefaultImageUrl(card)} />
       <div className="tile-body">
         <div className="tile-title">{card.title}</div>
