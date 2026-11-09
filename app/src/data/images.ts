@@ -40,3 +40,9 @@ export function getDefaultImageUrl(card: Card): string | null {
   const defaultImage = getAvailableImages(card)[0];
   return defaultImage === undefined ? null : defaultImage.url;
 }
+
+// The URL of the card's image with this artwork index, or null if it has no available image with that index.
+export function getArtworkImageUrl(card: Card, artwork: string): string | null {
+  const image = getAvailableImages(card).find((candidate) => candidate.index === artwork);
+  return image === undefined ? null : image.url;
+}

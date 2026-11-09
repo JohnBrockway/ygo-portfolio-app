@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
 import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
+import { PrintingArt } from "../components/PrintingArt";
 import { editionLabel } from "../data/editions";
 import { loadMasterData } from "../data/masterData";
 import { printingName } from "../data/printings";
@@ -87,6 +88,7 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
               <span className="tag">Verified</span>
             </div>
           ) : null}
+          {card === undefined ? null : <PrintingArt card={card} printing={printing} />}
           <EditionRows editions={editions} />
         </section>
       ))}
