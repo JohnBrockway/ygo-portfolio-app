@@ -5,6 +5,7 @@ import { BackLink } from "../components/BackLink";
 import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { PrintingArt } from "../components/PrintingArt";
 import { editionLabel } from "../data/editions";
+import { isEditModeOn } from "../data/editMode";
 import { loadMasterData } from "../data/masterData";
 import { printingName } from "../data/printings";
 import type { Edition, MasterData } from "../data/types";
@@ -49,6 +50,7 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
   const cardTitle = card === undefined ? setcode.card_id : card.title;
   const setTitle = set === undefined ? setcode.set_id : set.title;
   const editions: Edition[] = set === undefined ? [] : set.editions;
+  const editMode = isEditModeOn();
   let returnLabel;
   if (setcode.set_number_synthetic) {
     returnLabel = card === undefined ? "printing" : card.title;
@@ -79,6 +81,7 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
       <div className="row-meta">
         {set === undefined ? null : <span className="tag">{set.region}</span>}
         {setcode.set_number_synthetic ? null : <span>{setcode.set_number}</span>}
+        {editMode ? <span className="tag">Edit mode</span> : null}
       </div>
       {setcode.printings.map((printing) => (
         <section key={printing.printing_id}>
@@ -88,7 +91,7 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
               <span className="tag">Verified</span>
             </div>
           ) : null}
-          {card === undefined ? null : <PrintingArt card={card} printing={printing} />}
+          {card === undefined ? null : <PrintingArt card={card} printing={printing} editMode={editMode} />}
           <EditionRows editions={editions} />
         </section>
       ))}
