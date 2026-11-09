@@ -4,9 +4,12 @@ import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
 import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { PrintingArt } from "../components/PrintingArt";
+import { PrintingEditor } from "../components/PrintingEditor";
 import { editionLabel } from "../data/editions";
 import { isEditModeOn } from "../data/editMode";
 import { loadMasterData } from "../data/masterData";
+import { loadDrafts, maybeApplyDraft, saveDraftsToStorage, withDraft, withoutDraft } from "../data/overrideDrafts";
+import type { OverrideDraft, OverrideDrafts } from "../data/overrideDrafts";
 import { printingName } from "../data/printings";
 import type { Edition, MasterData } from "../data/types";
 
@@ -34,6 +37,9 @@ function EditionRows({ editions }: { editions: Edition[] }) {
 }
 
 function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: string | undefined }) {
+  // Edit mode's changes that haven't been exported yet. They only show while edit mode is on.
+  const [drafts, setDrafts] = useState<OverrideDrafts>(() => loadDrafts());
+
   const setcode = data.setcodes.find((candidate) => candidate.setcode_id === setcodeId);
   if (setcode === undefined) {
     return (
@@ -56,6 +62,19 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
     returnLabel = card === undefined ? "printing" : card.title;
   } else {
     returnLabel = setcode.set_number;
+  }
+
+  // The printings as they are shown (in edit mode, that's with their drafts applied) and whether it has a draft.
+  const rows = setcode.printings.map((printing) => {
+    const draft = editMode ? drafts[printing.printing_id] : undefined;
+    return { printing: maybeApplyDraft(printing, draft), hasDraft: draft !== undefined };
+  });
+  const printings = rows.map((row) => row.printing);
+
+  function handleDraftChange(printingId: string, draft: OverrideDraft | null) {
+    const updatedDrafts = draft === null ? withoutDraft(drafts, printingId) : withDraft(drafts, printingId, draft);
+    saveDraftsToStorage(updatedDrafts);
+    setDrafts(updatedDrafts);
   }
 
   return (
@@ -83,18 +102,38 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
         {setcode.set_number_synthetic ? null : <span>{setcode.set_number}</span>}
         {editMode ? <span className="tag">Edit mode</span> : null}
       </div>
-      {setcode.printings.map((printing) => (
-        <section key={printing.printing_id}>
-          <h2>{printingName(printing, setcode.printings)}</h2>
-          {printing.verified ? (
-            <div className="row-meta">
-              <span className="tag">Verified</span>
-            </div>
-          ) : null}
-          {card === undefined ? null : <PrintingArt card={card} printing={printing} editMode={editMode} />}
-          <EditionRows editions={editions} />
-        </section>
-      ))}
+      {rows.map(({ printing, hasDraft }) => {
+        let statusTag: ReactNode = null;
+        if (hasDraft) {
+          statusTag = <span className="tag">Draft</span>;
+        } else if (printing.verified) {
+          statusTag = <span className="tag">Verified</span>;
+        }
+
+        let art: ReactNode = null;
+        if (card !== undefined && editMode) {
+          art = (
+            <PrintingEditor
+              card={card}
+              setcodeId={setcode.setcode_id}
+              printing={printing}
+              hasDraft={hasDraft}
+              onDraftChange={(draft) => handleDraftChange(printing.printing_id, draft)}
+            />
+          );
+        } else if (card !== undefined) {
+          art = <PrintingArt card={card} printing={printing} />;
+        }
+
+        return (
+          <section key={printing.printing_id}>
+            <h2>{printingName(printing, printings)}</h2>
+            {statusTag === null ? null : <div className="row-meta">{statusTag}</div>}
+            {art}
+            <EditionRows editions={editions} />
+          </section>
+        );
+      })}
     </>
   );
 }

@@ -9,8 +9,11 @@ export function printingName(printing: Printing, setcodePrintings: Printing[]): 
   if (sameRarityCount > 1 && printing.artwork !== null) {
     details.push(`art ${printing.artwork}`);
   }
-  if (printing.label !== null) {
-    details.push(printing.label);
+
+  // Labels are kept as typed in edit mode, so trim them here; one with only spaces counts as no label.
+  const label = printing.label?.trim();
+  if (label) {
+    details.push(label);
   }
 
   if (details.length === 0) {
