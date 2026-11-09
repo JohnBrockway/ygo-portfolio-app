@@ -33,10 +33,17 @@ export interface CardSet {
   setcode_count: number;
 }
 
-// One version of a card within a setcode, by rarity (art later). This is what gets marked owned or wanted.
+// One version of a card within a setcode: a rarity, plus variants for when that rarity exists in
+// several artworks or versions (variant 1 always exists). This is what gets marked owned or wanted.
 export interface Printing {
   printing_id: string;
   rarity: string;
+  variant: number;
+  // The card image index.
+  artwork: string | null;
+  // Free-text.
+  label: string | null;
+  verified: boolean;
 }
 
 export interface SetCode {

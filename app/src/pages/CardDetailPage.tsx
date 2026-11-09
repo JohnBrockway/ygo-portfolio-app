@@ -6,6 +6,7 @@ import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { getAvailableImages } from "../data/images";
 import type { AvailableImage } from "../data/images";
 import { loadMasterData } from "../data/masterData";
+import { printingName } from "../data/printings";
 import type { MasterData } from "../data/types";
 
 type SetRecord = MasterData["sets"][number];
@@ -138,7 +139,7 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
                 {row.setcode.set_number_synthetic ? null : <span>{row.setcode.set_number}</span>}
                 {row.setcode.printings.map((printing) => (
                   <span key={printing.printing_id} className="tag">
-                    {printing.rarity}
+                    {printingName(printing, row.setcode.printings)}
                   </span>
                 ))}
               </div>

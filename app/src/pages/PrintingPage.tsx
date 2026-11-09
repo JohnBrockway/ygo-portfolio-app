@@ -5,6 +5,7 @@ import { BackLink } from "../components/BackLink";
 import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { editionLabel } from "../data/editions";
 import { loadMasterData } from "../data/masterData";
+import { printingName } from "../data/printings";
 import type { Edition, MasterData } from "../data/types";
 
 // One row per edition the set has. TODO this is where the owned counter goes.
@@ -80,7 +81,12 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
       </div>
       {setcode.printings.map((printing) => (
         <section key={printing.printing_id}>
-          <h2>{printing.rarity}</h2>
+          <h2>{printingName(printing, setcode.printings)}</h2>
+          {printing.verified ? (
+            <div className="row-meta">
+              <span className="tag">Verified</span>
+            </div>
+          ) : null}
           <EditionRows editions={editions} />
         </section>
       ))}
