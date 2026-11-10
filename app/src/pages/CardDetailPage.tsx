@@ -2,17 +2,16 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
-import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
+import { CardTile } from "../components/CardTile";
 import { getAvailableImages } from "../data/images";
 import type { AvailableImage } from "../data/images";
 import { loadMasterData } from "../data/masterData";
-import { printingName } from "../data/printings";
 import type { MasterData } from "../data/types";
 
 type SetRecord = MasterData["sets"][number];
 type SetCodeRecord = MasterData["setcodes"][number];
 
-// A setcode plus the set info we need to display and sort it.
+// A setcode plus the set info we need to sort it.
 type SetCodeRowData = {
   setcode: SetCodeRecord;
   releaseDate: string | null;
@@ -129,21 +128,15 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
     list = <p className="muted">No printings for this card.</p>;
   } else {
     list = (
-      <ul className="row-list">
+      <ul className="tile-grid tile-grid-cards">
         {rows.map((row) => (
           <li key={row.setcode.setcode_id}>
-            <LinkWithReturnInfo to={`/printings/${row.setcode.setcode_id}`} backLabel={card.title} className="row">
-              <div className="row-title">{row.setTitle}</div>
-              <div className="row-meta">
-                {row.region === "" ? null : <span className="tag">{row.region}</span>}
-                {row.setcode.set_number_synthetic ? null : <span>{row.setcode.set_number}</span>}
-                {row.setcode.printings.map((printing) => (
-                  <span key={printing.printing_id} className="tag">
-                    {printingName(printing, row.setcode.printings)}
-                  </span>
-                ))}
-              </div>
-            </LinkWithReturnInfo>
+            <CardTile
+              card={card}
+              setcode={row.setcode}
+              printingCount={row.setcode.printings.length}
+              backLabel={card.title}
+            />
           </li>
         ))}
       </ul>
