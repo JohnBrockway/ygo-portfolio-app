@@ -1,9 +1,10 @@
 import { getArtworkImageUrl } from "../data/images";
-import type { Card, Printing } from "../data/types";
+import type { DisplayPrinting } from "../data/printings";
+import type { Card } from "../data/types";
 
 // The art a printing shows. Only verified printings have a known artwork.
 // (Edit mode uses PrintingEditor instead.)
-export function PrintingArt({ card, printing }: { card: Card; printing: Printing }) {
+export function PrintingArt({ card, printing }: { card: Card; printing: DisplayPrinting }) {
   if (!printing.verified || !printing.artwork) {
     return null;
   }

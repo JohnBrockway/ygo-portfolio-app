@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
@@ -7,13 +7,18 @@ import { PrintingArt } from "../components/PrintingArt";
 import { PrintingEditor } from "../components/PrintingEditor";
 import { editionLabel } from "../data/editions";
 import { isEditModeOn } from "../data/editMode";
+import { getAvailableImages } from "../data/images";
 import { loadMasterData } from "../data/masterData";
-import { loadDrafts, maybeApplyDraft, saveDraftsToStorage, withDraft, withoutDraft } from "../data/overrideDrafts";
+import { draftKey, loadDrafts, saveDraftsToStorage, withDraft, withoutDraft } from "../data/overrideDrafts";
 import type { OverrideDraft, OverrideDrafts } from "../data/overrideDrafts";
+import { getPrintingRows } from "../data/printingRows";
+import type { PendingVersion } from "../data/printingRows";
 import { printingName } from "../data/printings";
+import type { DisplayPrinting } from "../data/printings";
 import type { Edition, MasterData } from "../data/types";
 
-// One row per edition the set has. TODO this is where the owned counter goes.
+// One row per edition the set has. TODO this is where the owned counter goes. Only for printings that have a
+// printing_id; versions that only exist as drafts can't be marked until the build has given them one.
 function EditionRows({ editions }: { editions: Edition[] }) {
   if (editions.length === 0) {
     return (
@@ -39,6 +44,8 @@ function EditionRows({ editions }: { editions: Edition[] }) {
 function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: string | undefined }) {
   // Edit mode's changes that haven't been exported yet. They only show while edit mode is on.
   const [drafts, setDrafts] = useState<OverrideDrafts>(() => loadDrafts());
+  // Versions just added that are waiting for an artwork. Not saved anywhere, so leaving the page drops them.
+  const [pendingVersions, setPendingVersions] = useState<PendingVersion[]>([]);
 
   const setcode = data.setcodes.find((candidate) => candidate.setcode_id === setcodeId);
   if (setcode === undefined) {
@@ -64,18 +71,26 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
     returnLabel = setcode.set_number;
   }
 
-  // The printings as they are shown (in edit mode, that's with their drafts applied) and whether it has a draft.
-  const rows = setcode.printings.map((printing) => {
-    const draft = editMode ? drafts[printing.printing_id] : undefined;
-    return { printing: maybeApplyDraft(printing, draft), hasDraft: draft !== undefined };
-  });
+  // Each printing as it is shown (in edit mode, with its draft applied, added versions included).
+  const rows = getPrintingRows(setcode.printings, setcode.setcode_id, drafts, pendingVersions, editMode);
   const printings = rows.map((row) => row.printing);
 
-  function handleDraftChange(printingId: string, draft: OverrideDraft | null) {
-    const updatedDrafts = draft === null ? withoutDraft(drafts, printingId) : withDraft(drafts, printingId, draft);
+  const handleDraftChange = (printing: DisplayPrinting, draft: OverrideDraft | null) => {
+    const key = draftKey(setcode.setcode_id, printing.rarity, printing.variant);
+    const updatedDrafts = draft === null ? withoutDraft(drafts, key) : withDraft(drafts, key, draft);
     saveDraftsToStorage(updatedDrafts);
     setDrafts(updatedDrafts);
-  }
+
+    // A pending version stops being pending once it has an artwork (so a draft), or is cancelled.
+    setPendingVersions(
+      pendingVersions.filter((pending) => pending.rarity !== printing.rarity || pending.variant !== printing.variant),
+    );
+  };
+
+  const handleAddVersion = (rarity: string) => {
+    const variants = printings.filter((other) => other.rarity === rarity).map((other) => other.variant);
+    setPendingVersions([...pendingVersions, { rarity, variant: Math.max(...variants) + 1 }]);
+  };
 
   return (
     <>
@@ -102,9 +117,11 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
         {setcode.set_number_synthetic ? null : <span>{setcode.set_number}</span>}
         {editMode ? <span className="tag">Edit mode</span> : null}
       </div>
-      {rows.map(({ printing, hasDraft }) => {
+      {rows.map(({ printing, draftKind }, index) => {
         let statusTag: ReactNode = null;
-        if (hasDraft) {
+        if (draftKind === "added" || draftKind === "pending") {
+          statusTag = <span className="tag">New version</span>;
+        } else if (draftKind === "changed") {
           statusTag = <span className="tag">Draft</span>;
         } else if (printing.verified) {
           statusTag = <span className="tag">Verified</span>;
@@ -117,21 +134,56 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
               card={card}
               setcodeId={setcode.setcode_id}
               printing={printing}
-              hasDraft={hasDraft}
-              onDraftChange={(draft) => handleDraftChange(printing.printing_id, draft)}
+              draftKind={draftKind}
+              onDraftChange={(draft) => handleDraftChange(printing, draft)}
             />
           );
         } else if (card !== undefined) {
           art = <PrintingArt card={card} printing={printing} />;
         }
 
-        return (
-          <section key={printing.printing_id}>
-            <h2>{printingName(printing, printings)}</h2>
-            {statusTag === null ? null : <div className="row-meta">{statusTag}</div>}
-            {art}
+        // After the last printing of each rarity, edit mode offers to add another version of it
+        // (one at a time: not while a version of that rarity is still waiting for its artwork).
+        const nextRow = rows[index + 1];
+        const isLastOfRarity = nextRow === undefined || nextRow.printing.rarity !== printing.rarity;
+        const hasPendingOfRarity = rows.some(
+          (row) => row.draftKind === "pending" && row.printing.rarity === printing.rarity,
+        );
+        let addVersion: ReactNode = null;
+        if (
+          card !== undefined &&
+          editMode &&
+          isLastOfRarity &&
+          !hasPendingOfRarity &&
+          getAvailableImages(card).length > 0
+        ) {
+          addVersion = (
+            <p>
+              <button type="button" className="action-button" onClick={() => handleAddVersion(printing.rarity)}>
+                Add another {printing.rarity} version
+              </button>
+            </p>
+          );
+        }
+
+        // Only printings the build has given an id can be marked, later. Versions that only exist as drafts can't.
+        const editionRows =
+          printing.printing_id === null ? (
+            <p className="muted">Can't be marked until it has been exported and built into the data.</p>
+          ) : (
             <EditionRows editions={editions} />
-          </section>
+          );
+
+        return (
+          <Fragment key={draftKey(setcode.setcode_id, printing.rarity, printing.variant)}>
+            <section>
+              <h2>{printingName(printing, printings)}</h2>
+              {statusTag === null ? null : <div className="row-meta">{statusTag}</div>}
+              {art}
+              {editionRows}
+            </section>
+            {addVersion}
+          </Fragment>
         );
       })}
     </>
@@ -170,7 +222,9 @@ export function PrintingPage() {
   } else if (data === null) {
     content = <p className="muted">Loading printing…</p>;
   } else {
-    content = <PrintingDetail data={data} setcodeId={setcodeId} />;
+    // key makes this unique per printing page, otherwise React would reuse the component (and its pending
+    // versions) if navigating directly between printing pages.
+    content = <PrintingDetail key={setcodeId} data={data} setcodeId={setcodeId} />;
   }
 
   return (

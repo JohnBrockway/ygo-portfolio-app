@@ -1,4 +1,4 @@
-import type { Printing } from "./types";
+import type { Card, Printing } from "./types";
 
 const DRAFTS_KEY = "printingOverrideDrafts";
 
@@ -15,8 +15,14 @@ export interface OverrideDraft {
   label: string | null;
 }
 
-// Drafts by the printing_id they apply to.
+// Drafts by draftKey.
 export type OverrideDrafts = Record<string, OverrideDraft | undefined>;
+
+// A draft is identified by setcode, rarity and variant number.
+// Intentionally distinct from a canonical printing id from the data build pipeline
+export function draftKey(setcodeId: string, rarity: string, variant: number): string {
+  return JSON.stringify([setcodeId, rarity, variant]);
+}
 
 // Drafts are kept in localStorage, so they only exist in the browser (and site address) they were made in.
 // TODO move to the app's storage once that exists.
@@ -39,14 +45,29 @@ export function saveDraftsToStorage(drafts: OverrideDrafts): void {
   }
 }
 
-export function withDraft(drafts: OverrideDrafts, printingId: string, draft: OverrideDraft): OverrideDrafts {
-  return { ...drafts, [printingId]: draft };
+export function withDraft(drafts: OverrideDrafts, key: string, draft: OverrideDraft): OverrideDrafts {
+  return { ...drafts, [key]: draft };
 }
 
-export function withoutDraft(drafts: OverrideDrafts, printingId: string): OverrideDrafts {
+export function withoutDraft(drafts: OverrideDrafts, key: string): OverrideDrafts {
   const updatedDrafts = { ...drafts };
-  delete updatedDrafts[printingId];
+  delete updatedDrafts[key];
   return updatedDrafts;
+}
+
+export function makeDraft(
+  card: Card,
+  setcodeId: string,
+  rarity: string,
+  variant: number,
+  artwork: string,
+  label: string | null,
+): OverrideDraft | null {
+  const image = card.images.find((candidate) => candidate.index === artwork);
+  if (image === undefined || image.file === null) {
+    return null;
+  }
+  return { setcode_id: setcodeId, rarity, variant, artwork, image: image.file, label };
 }
 
 // The printing as it will look once the draft is exported and built into the master data,

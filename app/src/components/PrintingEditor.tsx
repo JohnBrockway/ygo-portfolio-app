@@ -1,21 +1,24 @@
 import { getAvailableImages } from "../data/images";
+import { makeDraft } from "../data/overrideDrafts";
 import type { OverrideDraft } from "../data/overrideDrafts";
-import type { Card, Printing } from "../data/types";
+import type { DisplayPrinting } from "../data/printings";
+import type { DraftKind } from "../data/printingRows";
+import type { Card } from "../data/types";
 
 // Edit mode's version of PrintingArt: image picker & label text field.
-// printing is the printing as shown (draft already applied if it has one); hasDraft says whether it has one.
-// onDraftChange gets the new draft, or null to discard the printing's draft.
+// printing is the printing as shown (draft already applied if it has one); draftKind describes what level of draft it is.
+// onDraftChange gets the new draft, or null to discard the printing's draft (which removes an added version).
 export function PrintingEditor({
   card,
   setcodeId,
   printing,
-  hasDraft,
+  draftKind,
   onDraftChange,
 }: {
   card: Card;
   setcodeId: string;
-  printing: Printing;
-  hasDraft: boolean;
+  printing: DisplayPrinting;
+  draftKind: DraftKind;
   onDraftChange: (draft: OverrideDraft | null) => void;
 }) {
   const images = getAvailableImages(card);
@@ -24,18 +27,10 @@ export function PrintingEditor({
   }
 
   function saveDraft(artwork: string, label: string | null) {
-    const image = card.images.find((candidate) => candidate.index === artwork);
-    if (image === undefined || image.file === null) {
-      return;
+    const draft = makeDraft(card, setcodeId, printing.rarity, printing.variant, artwork, label);
+    if (draft !== null) {
+      onDraftChange(draft);
     }
-    onDraftChange({
-      setcode_id: setcodeId,
-      rarity: printing.rarity,
-      variant: printing.variant,
-      artwork,
-      image: image.file,
-      label,
-    });
   }
 
   function handleLabelChange(text: string) {
@@ -43,6 +38,13 @@ export function PrintingEditor({
       return;
     }
     saveDraft(printing.artwork, text === "" ? null : text);
+  }
+
+  let discardLabel = "Discard draft";
+  if (draftKind === "added") {
+    discardLabel = "Remove version";
+  } else if (draftKind === "pending") {
+    discardLabel = "Cancel";
   }
 
   return (
@@ -61,6 +63,7 @@ export function PrintingEditor({
           </button>
         ))}
       </div>
+      {draftKind === "pending" ? <p className="muted">Pick an artwork to keep this version.</p> : null}
       {printing.artwork === null ? null : (
         <label className="muted">
           <input
@@ -72,13 +75,13 @@ export function PrintingEditor({
           />
         </label>
       )}
-      {hasDraft ? (
+      {draftKind === "none" ? null : (
         <p>
           <button type="button" className="action-button" onClick={() => onDraftChange(null)}>
-            Discard draft
+            {discardLabel}
           </button>
         </p>
-      ) : null}
+      )}
     </>
   );
 }
