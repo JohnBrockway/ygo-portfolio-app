@@ -365,7 +365,7 @@ a {
 }
 
 
-/* Printing page: the art a printing shows (one image when verified, otherwise all of the card's images). */
+/* Printing page: the art a verified printing shows. */
 
 .printing-art {
   display: flex;
@@ -469,4 +469,21 @@ a {
   border-color: var(--border);
   opacity: 0.4;
   cursor: default;
+}
+
+/* Tile image made of several images stacked like a pile of cards (see TileStack). It reuses the .tile-image box;
+   the area sits inside it where the box's 0.5rem padding would be, and TileStack places each image in it. */
+
+.tile-stack {
+  position: relative;
+}
+
+.tile-stack-area {
+  position: absolute;
+  inset: 0.5rem;
+}
+
+.tile-stack-area img {
+  position: absolute;
+  object-fit: contain;
 }

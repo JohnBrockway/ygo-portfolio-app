@@ -53,14 +53,20 @@ export function getArtworkImageUrl(card: Card, artwork: string): string | null {
   return imageUrl(CARD_IMAGE_BASE, getArtworkImageFile(card, artwork));
 }
 
-// The URL of the image to show for a card in a tile: the image of the given (verified) artwork if there is one,
-// otherwise the card's default image. Null (show the placeholder) if there is neither.
-export function getTileImageUrl(card: Card, artwork: string | null): string | null {
-  if (artwork !== null) {
-    const artworkUrl = getArtworkImageUrl(card, artwork);
-    if (artworkUrl !== null) {
-      return artworkUrl;
+// The URLs of the images to show for a card in a tile:all verified artworks that have an image,
+// or the card's default image if there are none. Empty (show the placeholder) if the card has no images at all.
+export function getTileImageUrls(card: Card, artworks: string[]): string[] {
+  const urls: string[] = [];
+  for (const artwork of artworks) {
+    const url = getArtworkImageUrl(card, artwork);
+    if (url !== null) {
+      urls.push(url);
     }
   }
-  return getDefaultImageUrl(card);
+  if (urls.length > 0) {
+    return urls;
+  }
+
+  const defaultUrl = getDefaultImageUrl(card);
+  return defaultUrl === null ? [] : [defaultUrl];
 }

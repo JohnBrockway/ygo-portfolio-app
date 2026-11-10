@@ -37,12 +37,13 @@ export function printingName(printing: DisplayPrinting, setcodePrintings: Displa
   }
 }
 
-// The artwork of the first verified printing in the list, or null if none of them is verified.
-export function getFirstVerifiedArtwork(printings: Printing[]): string | null {
+// The distinct artworks of the verified printings in the list.
+export function getVerifiedArtworks(printings: Printing[]): string[] {
+  const artworks: string[] = [];
   for (const printing of printings) {
-    if (printing.verified && printing.artwork) {
-      return printing.artwork;
+    if (printing.verified && printing.artwork && !artworks.includes(printing.artwork)) {
+      artworks.push(printing.artwork);
     }
   }
-  return null;
+  return artworks;
 }
