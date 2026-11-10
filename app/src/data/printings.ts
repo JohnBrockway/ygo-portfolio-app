@@ -36,3 +36,13 @@ export function printingName(printing: DisplayPrinting, setcodePrintings: Displa
     return `${printing.rarity} (${details.join(", ")})`;
   }
 }
+
+// The artwork of the first verified printing in the list, or null if none of them is verified.
+export function getFirstVerifiedArtwork(printings: Printing[]): string | null {
+  for (const printing of printings) {
+    if (printing.verified && printing.artwork) {
+      return printing.artwork;
+    }
+  }
+  return null;
+}

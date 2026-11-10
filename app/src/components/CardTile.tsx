@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { getDefaultImageUrl } from "../data/images";
+import { getTileImageUrl } from "../data/images";
+import { getFirstVerifiedArtwork } from "../data/printings";
 import type { Card, SetCode } from "../data/types";
 import { LinkWithReturnInfo } from "./LinkWithReturnInfo";
 import { TileImage } from "./TileImage";
@@ -23,16 +24,20 @@ export function CardTile({
 }) {
   let to = `/cards/${card.card_id}`;
 
-  // For printings, link directly to the printing page and show the set number.
+  let artwork: string | null = null;
+
+  // For printings, link directly to the printing page, show the set number, and show the artwork of the
+  // setcode's first verified printing (the default image if none is verified).
   let setNumberTag: ReactNode = null;
   if (setcode !== undefined) {
     to = `/printings/${setcode.setcode_id}`;
+    artwork = getFirstVerifiedArtwork(setcode.printings);
     setNumberTag = setcode.set_number_synthetic ? null : <span className="tag">{setcode.set_number}</span>;
   }
 
   return (
     <LinkWithReturnInfo to={to} backLabel={backLabel} className="tile" title={card.title}>
-      <TileImage imageUrl={getDefaultImageUrl(card)} />
+      <TileImage imageUrl={getTileImageUrl(card, artwork)} />
       <div className="tile-body">
         <div className="tile-title">{card.title}</div>
         <div className="tile-meta">
