@@ -1,3 +1,4 @@
+import { getArtworkImageFile } from "./images";
 import type { Card, Printing } from "./types";
 
 const DRAFTS_KEY = "printingOverrideDrafts";
@@ -63,11 +64,11 @@ export function makeDraft(
   artwork: string,
   label: string | null,
 ): OverrideDraft | null {
-  const image = card.images.find((candidate) => candidate.index === artwork);
-  if (image === undefined || image.file === null) {
+  const image = getArtworkImageFile(card, artwork);
+  if (image === null) {
     return null;
   }
-  return { setcode_id: setcodeId, rarity, variant, artwork, image: image.file, label };
+  return { setcode_id: setcodeId, rarity, variant, artwork, image, label };
 }
 
 // The printing as it will look once the draft is exported and built into the master data,

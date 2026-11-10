@@ -4,6 +4,17 @@ import type { Printing } from "./types";
 // draft: the build hasn't given it an id yet, so nothing (marks, later) can be saved against it.
 export type DisplayPrinting = Omit<Printing, "printing_id"> & { printing_id: string | null };
 
+// A label as it is shown and saved: with the spaces around it removed, or null if nothing is left.
+// Edit mode keeps labels exactly as typed (so spaces can be typed), so anything that shows or saves a label
+// goes through this.
+export function cleanLabel(label: string | null): string | null {
+  if (label === null) {
+    return null;
+  }
+  const trimmed = label.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
 // What to call a printing in the UI. Normally, just its rarity. When the setcode has several
 // printings of that rarity, the artwork tells them apart. A custom label, if present, is always added.
 export function printingName(printing: DisplayPrinting, setcodePrintings: DisplayPrinting[]): string {
@@ -14,9 +25,8 @@ export function printingName(printing: DisplayPrinting, setcodePrintings: Displa
     details.push(`art ${printing.artwork}`);
   }
 
-  // Labels are kept as typed in edit mode, so trim them here; one with only spaces counts as no label.
-  const label = printing.label?.trim();
-  if (label) {
+  const label = cleanLabel(printing.label);
+  if (label !== null) {
     details.push(label);
   }
 

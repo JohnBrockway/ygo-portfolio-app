@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { OverrideExport } from "../components/OverrideExport";
 import { isEditModeOn, setEditModeOn } from "../data/editMode";
 
 export function SettingsPage() {
@@ -13,6 +14,7 @@ export function SettingsPage() {
   return (
     <>
       <h1>Settings</h1>
+      <p className="muted">Account and data options will go here.</p>
       <section>
         <h2>Edit mode</h2>
         <p className="muted">Lets you tag which artwork each printing shows. Only needed when adding printing data.</p>
@@ -24,6 +26,7 @@ export function SettingsPage() {
           />{" "}
           Turn on edit mode
         </label>
+        {editMode ? <OverrideExport /> : null}
       </section>
     </>
   );

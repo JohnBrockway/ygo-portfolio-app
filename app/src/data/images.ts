@@ -41,8 +41,14 @@ export function getDefaultImageUrl(card: Card): string | null {
   return defaultImage === undefined ? null : defaultImage.url;
 }
 
+// The file name of the card's image with this artwork index, or null if the card has no such image
+// or the image has no file.
+export function getArtworkImageFile(card: Card, artwork: string): string | null {
+  const image = card.images.find((candidate) => candidate.index === artwork);
+  return image === undefined ? null : image.file;
+}
+
 // The URL of the card's image with this artwork index, or null if it has no available image with that index.
 export function getArtworkImageUrl(card: Card, artwork: string): string | null {
-  const image = getAvailableImages(card).find((candidate) => candidate.index === artwork);
-  return image === undefined ? null : image.url;
+  return imageUrl(CARD_IMAGE_BASE, getArtworkImageFile(card, artwork));
 }
