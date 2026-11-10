@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { loadMasterData } from "../data/masterData";
-import { loadDrafts, saveDraftsToStorage } from "../data/overrideDrafts";
-import type { OverrideDrafts } from "../data/overrideDrafts";
+import { updateDrafts, useDrafts } from "../data/overrideDrafts";
 import { buildOverrides, dropRedundantDrafts, formatOverrideFile } from "../data/overrideExport";
 import type { MasterData } from "../data/types";
 
@@ -20,7 +19,7 @@ function downloadTextFile(fileName: string, text: string) {
 export function OverrideExport() {
   const [data, setData] = useState<MasterData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<OverrideDrafts>(() => loadDrafts());
+  const drafts = useDrafts();
 
   useEffect(() => {
     // Ignore the result if the page was left before the fetch finished.
@@ -30,9 +29,7 @@ export function OverrideExport() {
       .then((loadedData) => {
         if (!cancelled) {
           // Drafts the data already contains (i.e. after backend is rebuilt with an exported file) aren't needed any more.
-          const cleanedDrafts = dropRedundantDrafts(loadedData, loadDrafts());
-          saveDraftsToStorage(cleanedDrafts);
-          setDrafts(cleanedDrafts);
+          updateDrafts((current) => dropRedundantDrafts(loadedData, current));
           setData(loadedData);
         }
       })
@@ -69,8 +66,7 @@ export function OverrideExport() {
     if (!window.confirm("Discard all drafts? This can't be undone.")) {
       return;
     }
-    saveDraftsToStorage({});
-    setDrafts({});
+    updateDrafts(() => ({}));
   }
 
   return (

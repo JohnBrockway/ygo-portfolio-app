@@ -9,8 +9,8 @@ import { editionLabel } from "../data/editions";
 import { isEditModeOn } from "../data/editMode";
 import { getAvailableImages } from "../data/images";
 import { loadMasterData } from "../data/masterData";
-import { draftKey, loadDrafts, saveDraftsToStorage, withDraft, withoutDraft } from "../data/overrideDrafts";
-import type { OverrideDraft, OverrideDrafts } from "../data/overrideDrafts";
+import { draftKey, updateDrafts, useDrafts, withDraft, withoutDraft } from "../data/overrideDrafts";
+import type { OverrideDraft } from "../data/overrideDrafts";
 import { getPrintingRows } from "../data/printingRows";
 import type { PendingVersion } from "../data/printingRows";
 import { printingName } from "../data/printings";
@@ -42,8 +42,8 @@ function EditionRows({ editions }: { editions: Edition[] }) {
 }
 
 function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: string | undefined }) {
-  // Edit mode's changes that haven't been exported yet. They only show while edit mode is on.
-  const [drafts, setDrafts] = useState<OverrideDrafts>(() => loadDrafts());
+    // Edit mode's changes that haven't been exported yet. They only show while edit mode is on.
+  const drafts = useDrafts();
   // Versions just added that are waiting for an artwork. Not saved anywhere, so leaving the page drops them.
   const [pendingVersions, setPendingVersions] = useState<PendingVersion[]>([]);
 
@@ -75,11 +75,9 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
   const rows = getPrintingRows(setcode.printings, setcode.setcode_id, drafts, pendingVersions, editMode);
   const printings = rows.map((row) => row.printing);
 
-  const handleDraftChange = (printing: DisplayPrinting, draft: OverrideDraft | null) => {
+    const handleDraftChange = (printing: DisplayPrinting, draft: OverrideDraft | null) => {
     const key = draftKey(setcode.setcode_id, printing.rarity, printing.variant);
-    const updatedDrafts = draft === null ? withoutDraft(drafts, key) : withDraft(drafts, key, draft);
-    saveDraftsToStorage(updatedDrafts);
-    setDrafts(updatedDrafts);
+    updateDrafts((current) => (draft === null ? withoutDraft(current, key) : withDraft(current, key, draft)));
 
     // A pending version stops being pending once it has an artwork (so a draft), or is cancelled.
     setPendingVersions(

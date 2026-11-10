@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from "react";
 import { getArtworkImageFile } from "./images";
 import type { Card, Printing } from "./types";
 
@@ -26,24 +27,75 @@ export function draftKey(setcodeId: string, rarity: string, variant: number): st
 }
 
 // Drafts are kept in localStorage, so they only exist in the browser (and site address) they were made in.
+// localStorage is shared by every open tab, so it is the one source of truth. Components should only ever read
+// through useDrafts and change drafts through updateDrafts.
 // TODO move to the app's storage once that exists.
 
-export function loadDrafts(): OverrideDrafts {
+// The parsed drafts, kept until the stored text changes. useSyncExternalStore needs getDrafts to return the
+// same object for as long as nothing has changed, so the text is only parsed again when it differs.
+let cachedText: string | null | undefined;
+let cachedDrafts: OverrideDrafts = {};
+
+// Called whenever drafts change in this tab. (Changes made in other tabs arrive as storage events.)
+const listeners = new Set<() => void>();
+
+export function getDrafts(): OverrideDrafts {
+  let text: string | null;
   try {
-    const text = window.localStorage.getItem(DRAFTS_KEY);
-    return text === null ? {} : JSON.parse(text);
+    text = window.localStorage.getItem(DRAFTS_KEY);
   } catch {
-    // Storage is blocked or holds something unreadable.
-    return {};
+    // Storage is blocked, so only what this tab has kept in memory is left.
+    return cachedDrafts;
   }
+
+  if (text !== cachedText) {
+    cachedText = text;
+    try {
+      cachedDrafts = text === null ? {} : JSON.parse(text);
+    } catch {
+      cachedDrafts = {};
+    }
+  }
+  return cachedDrafts;
 }
 
-export function saveDraftsToStorage(drafts: OverrideDrafts): void {
-  try {
-    window.localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
-  } catch {
-    // Storage is blocked, so the drafts can't be remembered. Nothing else to do.
+export function updateDrafts(change: (current: OverrideDrafts) => OverrideDrafts): void {
+  const current = getDrafts();
+  const updatedDrafts = change(current);
+  if (updatedDrafts === current) {
+    return;
   }
+
+  try {
+    window.localStorage.setItem(DRAFTS_KEY, JSON.stringify(updatedDrafts));
+  } catch {
+    cachedDrafts = updatedDrafts;
+  }
+  listeners.forEach((listener) => listener());
+}
+
+// Calls listener whenever the drafts change, in this tab or in another one. Returns the way to stop.
+export function subscribeToDrafts(listener: () => void): () => void {
+  listeners.add(listener);
+
+  // A storage event only fires in the *other* tabs that share the storage, never in the one that made the change.
+  // A null key means the storage was cleared.
+  function handleStorage(event: StorageEvent) {
+    if (event.key === DRAFTS_KEY || event.key === null) {
+      listener();
+    }
+  }
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", handleStorage);
+  };
+}
+
+// The current drafts, re-rendering the component whenever they change.
+export function useDrafts(): OverrideDrafts {
+  return useSyncExternalStore(subscribeToDrafts, getDrafts);
 }
 
 export function withDraft(drafts: OverrideDrafts, key: string, draft: OverrideDraft): OverrideDrafts {
