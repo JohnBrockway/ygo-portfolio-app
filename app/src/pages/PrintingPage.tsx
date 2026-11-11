@@ -2,10 +2,10 @@ import { Fragment, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
+import { EditionCells } from "../components/EditionCells";
 import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { PrintingArt } from "../components/PrintingArt";
 import { PrintingEditor } from "../components/PrintingEditor";
-import { editionLabel } from "../data/editions";
 import { isEditModeOn } from "../data/editMode";
 import { getAvailableImages } from "../data/images";
 import { loadMasterData } from "../data/masterData";
@@ -16,30 +16,6 @@ import type { PendingVersion } from "../data/printingRows";
 import { printingName } from "../data/printings";
 import type { DisplayPrinting } from "../data/printings";
 import type { Edition, MasterData } from "../data/types";
-
-// One row per edition the set has. TODO this is where the owned counter goes. Only for printings that have a
-// printing_id; versions that only exist as drafts can't be marked until the build has given them one.
-function EditionRows({ editions }: { editions: Edition[] }) {
-  if (editions.length === 0) {
-    return (
-      <ul className="row-list">
-        <li className="row">
-          <div className="row-title">No edition</div>
-        </li>
-      </ul>
-    );
-  }
-
-  return (
-    <ul className="row-list">
-      {editions.map((edition) => (
-        <li key={edition} className="row">
-          <div className="row-title">{editionLabel(edition)}</div>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: string | undefined }) {
     // Edit mode's changes that haven't been exported yet. They only show while edit mode is on.
@@ -90,6 +66,12 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
     setPendingVersions([...pendingVersions, { rarity, variant: Math.max(...variants) + 1 }]);
   };
 
+  // Edit mode's panels hold the artwork picker, so they get wider columns.
+  let gridClass = "panel-grid";
+  if (editMode) {
+    gridClass = "panel-grid panel-grid-edit";
+  }
+
   return (
     <>
       <h1>
@@ -115,75 +97,75 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
         {setcode.set_number_synthetic ? null : <span>{setcode.set_number}</span>}
         {editMode ? <span className="tag">Edit mode</span> : null}
       </div>
-      {rows.map(({ printing, draftKind }, index) => {
-        let statusTag: ReactNode = null;
-        if (draftKind === "added" || draftKind === "pending") {
-          statusTag = <span className="tag">New version</span>;
-        } else if (draftKind === "changed") {
-          statusTag = <span className="tag">Draft</span>;
-        } else if (printing.verified) {
-          statusTag = <span className="tag">Verified</span>;
-        }
+      <div className={gridClass}>
+        {rows.map(({ printing, draftKind }, index) => {
+          let statusTag: ReactNode = null;
+          if (draftKind === "added" || draftKind === "pending") {
+            statusTag = <span className="tag">New version</span>;
+          } else if (draftKind === "changed") {
+            statusTag = <span className="tag">Draft</span>;
+          } else if (printing.verified) {
+            statusTag = <span className="tag">Verified</span>;
+          }
 
-        let art: ReactNode = null;
-        if (card !== undefined && editMode) {
-          art = (
-            <PrintingEditor
-              card={card}
-              setcodeId={setcode.setcode_id}
-              printing={printing}
-              draftKind={draftKind}
-              onDraftChange={(draft) => handleDraftChange(printing, draft)}
-            />
+          let art: ReactNode = null;
+          if (card !== undefined && editMode) {
+            art = (
+              <PrintingEditor
+                card={card}
+                setcodeId={setcode.setcode_id}
+                printing={printing}
+                draftKind={draftKind}
+                onDraftChange={(draft) => handleDraftChange(printing, draft)}
+              />
+            );
+          } else if (card !== undefined) {
+            art = <PrintingArt card={card} printing={printing} />;
+          }
+
+          // After the last printing of each rarity, edit mode offers to add another version of it
+          // (one at a time: not while a version of that rarity is still waiting for its artwork).
+          const nextRow = rows[index + 1];
+          const isLastOfRarity = nextRow === undefined || nextRow.printing.rarity !== printing.rarity;
+          const hasPendingOfRarity = rows.some(
+            (row) => row.draftKind === "pending" && row.printing.rarity === printing.rarity,
           );
-        } else if (card !== undefined) {
-          art = <PrintingArt card={card} printing={printing} />;
-        }
-
-        // After the last printing of each rarity, edit mode offers to add another version of it
-        // (one at a time: not while a version of that rarity is still waiting for its artwork).
-        const nextRow = rows[index + 1];
-        const isLastOfRarity = nextRow === undefined || nextRow.printing.rarity !== printing.rarity;
-        const hasPendingOfRarity = rows.some(
-          (row) => row.draftKind === "pending" && row.printing.rarity === printing.rarity,
-        );
-        let addVersion: ReactNode = null;
-        if (
-          card !== undefined &&
-          editMode &&
-          isLastOfRarity &&
-          !hasPendingOfRarity &&
-          getAvailableImages(card).length > 0
-        ) {
-          addVersion = (
-            <p>
-              <button type="button" className="action-button" onClick={() => handleAddVersion(printing.rarity)}>
+          let addVersion: ReactNode = null;
+          if (
+            card !== undefined &&
+            editMode &&
+            isLastOfRarity &&
+            !hasPendingOfRarity &&
+            getAvailableImages(card).length > 0
+          ) {
+            addVersion = (
+              <button type="button" className="panel panel-add" onClick={() => handleAddVersion(printing.rarity)}>
                 Add another {printing.rarity} version
               </button>
-            </p>
-          );
-        }
+            );
+          }
 
-        // Only printings the build has given an id can be marked, later. Versions that only exist as drafts can't.
-        const editionRows =
-          printing.printing_id === null ? (
-            <p className="muted">Can't be marked until it has been exported and built into the data.</p>
-          ) : (
-            <EditionRows editions={editions} />
-          );
+          // Only printings the build has given an id can be marked, later. Versions that only exist as drafts can't.
+          const editionCells =
+            printing.printing_id === null ? (
+              <p className="muted">Can't be marked until it has been exported and built into the data.</p>
+            ) : (
+              <EditionCells editions={editions} />
+            );
 
-        return (
-          <Fragment key={draftKey(setcode.setcode_id, printing.rarity, printing.variant)}>
-            <section>
-              <h2>{printingName(printing, printings)}</h2>
-              {statusTag === null ? null : <div className="row-meta">{statusTag}</div>}
-              {art}
-              {editionRows}
-            </section>
-            {addVersion}
-          </Fragment>
-        );
-      })}
+          return (
+            <Fragment key={draftKey(setcode.setcode_id, printing.rarity, printing.variant)}>
+              <section className="panel">
+                <h2 className="panel-title">{printingName(printing, printings)}</h2>
+                {statusTag === null ? null : <div className="row-meta">{statusTag}</div>}
+                {art}
+                <div className="panel-editions">{editionCells}</div>
+              </section>
+              {addVersion}
+            </Fragment>
+          );
+        })}
+      </div>
     </>
   );
 }
