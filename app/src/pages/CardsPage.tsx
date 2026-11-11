@@ -7,17 +7,19 @@ import { SearchBar } from "../components/SearchBar";
 import { getGames, toggleGame } from "../data/games";
 import { loadMasterData } from "../data/masterData";
 import { getRegions, toggleRegion } from "../data/regions";
-import { matchesAllTokens, splitQuery } from "../data/search";
+import { matchesAllTokens, matchesSetNumberAndTitle, splitQuery } from "../data/search";
 import type { Card, MasterData } from "../data/types";
 import { useFilterParams } from "../data/useFilterParams";
 
 type SetRecord = MasterData["sets"][number];
 type SetcodeRecord = MasterData["setcodes"][number];
 
-// A setcode that matched the search, with the card it belongs to (needed to show its tile).
-type SetcodeMatch = {
+// A setcode prepared for searching, with the card it belongs to (needed to show its tile).
+type SearchableSetcode = {
   setcode: SetcodeRecord;
   card: Card;
+  numberText: string;
+  titleText: string;
 };
 
 // Keeps the DOM small; the heading shows the full match count.
@@ -52,12 +54,39 @@ function findCardMatches(sortedCards: Card[], tokens: string[]): Card[] {
   return prefixMatches.concat(otherMatches);
 }
 
-// Callers pass setcodes already sorted by set number, with synthetic numbers removed.
-function findSetcodeMatches(sortedSetcodes: SetcodeRecord[], tokens: string[]): SetcodeRecord[] {
-  const matches: SetcodeRecord[] = [];
-  for (const setcode of sortedSetcodes) {
-    if (matchesAllTokens(setcode.set_number, tokens)) {
-      matches.push(setcode);
+// Everything the setcode search needs, built once per data load. Synthetic set numbers
+// aren't searchable.
+function buildSearchableSetcodes(
+  setcodes: SetcodeRecord[],
+  cardsById: Map<string, Card>
+): SearchableSetcode[] {
+  // Build a map so we don't need to re-lowercase every printing after seeing a card once
+  const lowerTitlesByCardId = new Map<string, string>();
+
+  const sortedSetcodes = setcodes
+    .filter((setcode) => !setcode.set_number_synthetic)
+    .sort((a, b) => setNumberCollator.compare(a.set_number, b.set_number));
+
+  return sortedSetcodes.flatMap((setcode): SearchableSetcode[] => {
+    const card = cardsById.get(setcode.card_id);
+    if (card === undefined) {
+      return [];
+    }
+    let titleText = lowerTitlesByCardId.get(card.card_id);
+    if (titleText === undefined) {
+      titleText = card.title.toLowerCase();
+      lowerTitlesByCardId.set(card.card_id, titleText);
+    }
+    return [{ setcode, card, numberText: setcode.set_number.toLowerCase(), titleText }];
+  });
+}
+
+// Callers pass a non-empty token list and entries already sorted by set number.
+function findSetcodeMatches(sortedEntries: SearchableSetcode[], tokens: string[]): SearchableSetcode[] {
+  const matches: SearchableSetcode[] = [];
+  for (const entry of sortedEntries) {
+    if (matchesSetNumberAndTitle(entry.numberText, entry.titleText, tokens)) {
+      matches.push(entry);
     }
   }
   return matches;
@@ -147,13 +176,10 @@ function CardSearch({ data }: { data: MasterData }) {
     [data]
   );
 
-  // Synthetic set numbers are never shown, so they must not be searchable either.
+  // Built once per data load, not per keystroke.
   const searchableSetcodes = useMemo(
-    () =>
-      data.setcodes
-        .filter((setcode) => !setcode.set_number_synthetic)
-        .sort((a, b) => setNumberCollator.compare(a.set_number, b.set_number)),
-    [data]
+    () => buildSearchableSetcodes(data.setcodes, cardsById),
+    [data, cardsById]
   );
 
   // Regions and games come from the full unfiltered data, so toggling one off never removes its button.
@@ -180,11 +206,7 @@ function CardSearch({ data }: { data: MasterData }) {
     if (tokens.length === 0) {
       return [];
     }
-    // A tile can't be shown without its card, so a setcode without one is dropped here.
-    let matches = findSetcodeMatches(searchableSetcodes, tokens).flatMap((setcode): SetcodeMatch[] => {
-      const card = cardsById.get(setcode.card_id);
-      return card === undefined ? [] : [{ setcode, card }];
-    });
+    let matches = findSetcodeMatches(searchableSetcodes, tokens);
     if (disabledGames.size > 0) {
       // A setcode belongs to its card's game, so it hides along with the card.
       matches = matches.filter(({ card }) => !disabledGames.has(card.game));
@@ -196,7 +218,7 @@ function CardSearch({ data }: { data: MasterData }) {
       });
     }
     return matches;
-  }, [searchableSetcodes, tokens, disabledRegions, disabledGames, cardsById, setsById]);
+  }, [searchableSetcodes, tokens, disabledRegions, disabledGames, setsById]);
 
   let results: ReactNode;
   if (games.length > 0 && games.every((game) => disabledGames.has(game))) {
