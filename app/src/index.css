@@ -8,6 +8,14 @@
   --text-muted: #9aa1ab;
   --accent: #7aa2f7;
 
+  --tile-monster-bg: #3b3028;
+  --tile-spell-bg: #1f3536;
+  --tile-trap-bg: #302839;
+  
+  --tile-monster-tag-border: #8f7a62;
+  --tile-spell-tag-border: #3f8588;
+  --tile-trap-tag-border: #8a6aa8;
+
   --nav-height: 3.5rem;
   --sidebar-width: 12rem;
 }
@@ -486,4 +494,28 @@ a {
 .tile-stack-area img {
   position: absolute;
   object-fit: contain;
+}
+
+.tile-monster {
+  background: var(--tile-monster-bg);
+}
+
+.tile-spell {
+  background: var(--tile-spell-bg);
+}
+
+.tile-trap {
+  background: var(--tile-trap-bg);
+}
+
+.tile-monster .tag {
+  border-color: var(--tile-monster-tag-border);
+}
+
+.tile-spell .tag {
+  border-color: var(--tile-spell-tag-border);
+}
+
+.tile-trap .tag {
+  border-color: var(--tile-trap-tag-border);
 }

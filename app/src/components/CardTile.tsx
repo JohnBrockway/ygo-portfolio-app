@@ -13,6 +13,20 @@ function formatVersionCount(count: number): string {
   return count === 1 ? "1 version" : `${count} versions`;
 }
 
+// The CSS class that tints a tile to hint at its card type.
+function tileTypeClass(cardType: string | null | undefined): string {
+  switch (cardType) {
+    case "Monster":
+      return "tile tile-monster";
+    case "Spell":
+      return "tile tile-spell";
+    case "Trap":
+      return "tile tile-trap";
+    default:
+      return "tile";
+  }
+}
+
 // backLabel is the name of the page this tile is shown on, for the Back link on the page it opens.
 // printingCount is how many printings (rarities and so on) the tile stands for: the setcode's own, or all the card's.
 export function CardTile({
@@ -44,13 +58,14 @@ export function CardTile({
   const image =
     imageUrls.length > 1 ? <TileStack imageUrls={imageUrls} /> : <TileImage imageUrl={imageUrls[0] ?? null} />;
 
+  const typeClass = tileTypeClass(card.card_type);
+
   return (
-    <LinkWithReturnInfo to={to} backLabel={backLabel} className="tile" title={card.title}>
+    <LinkWithReturnInfo to={to} backLabel={backLabel} className={typeClass} title={card.title}>
       {image}
       <div className="tile-body">
         <div className="tile-title">{card.title}</div>
         <div className="tile-meta">
-          {card.card_type ? <span className="tag">{card.card_type}</span> : null}
           {setNumberTag}
           <span className="muted">{formatVersionCount(printingCount)}</span>
         </div>
