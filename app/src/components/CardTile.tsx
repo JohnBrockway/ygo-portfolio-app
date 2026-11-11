@@ -9,6 +9,8 @@ import { TileStack } from "./TileStack";
 // A printing tile shows at most this many of its verified artworks, stacked.
 const MAX_STACKED_IMAGES = 3;
 
+const UNVERIFIED_LABEL = "Some printings are not verified";
+
 function formatVersionCount(count: number): string {
   return count === 1 ? "1 version" : `${count} versions`;
 }
@@ -25,6 +27,10 @@ function tileTypeClass(cardType: string | null | undefined): string {
     default:
       return "tile";
   }
+}
+
+function hasUnverifiedPrinting(setcode: SetCode): boolean {
+  return setcode.printings.some((printing) => !printing.verified);
 }
 
 // backLabel is the name of the page this tile is shown on, for the Back link on the page it opens.
@@ -47,10 +53,18 @@ export function CardTile({
   // For printings, link directly to the printing page, show the set number, and show the verified artworks
   // of the setcode's printings (the default image if none is verified).
   let setNumberTag: ReactNode = null;
+  let unverifiedBadge: ReactNode = null;
   if (setcode !== undefined) {
     to = `/printings/${setcode.setcode_id}`;
     artworks = getVerifiedArtworks(setcode.printings);
     setNumberTag = setcode.set_number_synthetic ? null : <span className="tag">{setcode.set_number}</span>;
+    if (hasUnverifiedPrinting(setcode)) {
+      unverifiedBadge = (
+        <span className="tile-unverified" role="img" aria-label={UNVERIFIED_LABEL} title={UNVERIFIED_LABEL}>
+          ?
+        </span>
+      );
+    }
   }
 
   // Several artworks are shown as a stack of images; one artwork (or the default image) is shown as it is.
@@ -62,6 +76,7 @@ export function CardTile({
 
   return (
     <LinkWithReturnInfo to={to} backLabel={backLabel} className={typeClass} title={card.title}>
+      {unverifiedBadge}
       {image}
       <div className="tile-body">
         <div className="tile-title">{card.title}</div>
