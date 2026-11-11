@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ListsDevPanel } from "../components/ListsDevPanel";
 import { OverrideExport } from "../components/OverrideExport";
 import { isEditModeOn, setEditModeOn } from "../data/editMode";
 
@@ -28,6 +29,7 @@ export function SettingsPage() {
         </label>
         {editMode ? <OverrideExport /> : null}
       </section>
+      <ListsDevPanel />
     </>
   );
 }
