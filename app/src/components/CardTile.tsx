@@ -29,21 +29,20 @@ function tileTypeClass(cardType: string | null | undefined): string {
   }
 }
 
-function hasUnverifiedPrinting(setcode: SetCode): boolean {
-  return setcode.printings.some((printing) => !printing.verified);
-}
-
 // backLabel is the name of the page this tile is shown on, for the Back link on the page it opens.
 // printingCount is how many printings (rarities and so on) the tile stands for: the setcode's own, or all the card's.
+// hasUnverifiedPrinting is whether any of those printings is not verified yet.
 export function CardTile({
   card,
   setcode,
   printingCount,
+  hasUnverifiedPrinting,
   backLabel,
 }: {
   card: Card;
   setcode?: SetCode;
   printingCount: number;
+  hasUnverifiedPrinting: boolean;
   backLabel: string;
 }) {
   let to = `/cards/${card.card_id}`;
@@ -53,18 +52,19 @@ export function CardTile({
   // For printings, link directly to the printing page, show the set number, and show the verified artworks
   // of the setcode's printings (the default image if none is verified).
   let setNumberTag: ReactNode = null;
-  let unverifiedBadge: ReactNode = null;
   if (setcode !== undefined) {
     to = `/printings/${setcode.setcode_id}`;
     artworks = getVerifiedArtworks(setcode.printings);
     setNumberTag = setcode.set_number_synthetic ? null : <span className="tag">{setcode.set_number}</span>;
-    if (hasUnverifiedPrinting(setcode)) {
-      unverifiedBadge = (
-        <span className="tile-unverified" role="img" aria-label={UNVERIFIED_LABEL} title={UNVERIFIED_LABEL}>
-          ?
-        </span>
-      );
-    }
+  }
+
+  let unverifiedBadge: ReactNode = null;
+  if (hasUnverifiedPrinting) {
+    unverifiedBadge = (
+      <span className="tile-unverified" role="img" aria-label={UNVERIFIED_LABEL} title={UNVERIFIED_LABEL}>
+        ?
+      </span>
+    );
   }
 
   // Several artworks are shown as a stack of images; one artwork (or the default image) is shown as it is.

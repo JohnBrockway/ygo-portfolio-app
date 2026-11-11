@@ -5,6 +5,7 @@ import { BackLink } from "../components/BackLink";
 import { CardTile } from "../components/CardTile";
 import { SetMeta } from "../components/SetMeta";
 import { loadMasterData } from "../data/masterData";
+import { hasUnverifiedPrinting } from "../data/printings";
 import type { Card, MasterData } from "../data/types";
 
 type SetcodeRecord = MasterData["setcodes"][number];
@@ -54,6 +55,7 @@ function SetPrintings({ data, setId }: { data: MasterData; setId: string | undef
               card={card}
               setcode={setcode}
               printingCount={setcode.printings.length}
+              hasUnverifiedPrinting={hasUnverifiedPrinting(setcode.printings)}
               backLabel={set.title}
             />
           </li>

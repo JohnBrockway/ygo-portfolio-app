@@ -6,6 +6,7 @@ import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
 import { getGames, toggleGame } from "../data/games";
 import { loadMasterData } from "../data/masterData";
+import { getCardIdsWithUnverifiedPrintings, hasUnverifiedPrinting } from "../data/printings";
 import { getRegions, toggleRegion } from "../data/regions";
 import { matchesAllTokens, matchesSetNumberAndTitle, splitQuery } from "../data/search";
 import type { Card, MasterData } from "../data/types";
@@ -187,6 +188,10 @@ function CardSearch({ data }: { data: MasterData }) {
   const games = useMemo(() => getGames(data.cards), [data]);
   const regionsByCardId = useMemo(() => buildRegionsByCardId(data.setcodes, setsById), [data, setsById]);
   const printingCountsByCardId = useMemo(() => buildPrintingCountsByCardId(data.setcodes), [data]);
+  const cardIdsWithUnverifiedPrintings = useMemo(
+    () => getCardIdsWithUnverifiedPrintings(data.setcodes),
+    [data]
+  );
 
   const cardMatches = useMemo(() => {
     if (tokens.length === 0) {
@@ -240,6 +245,7 @@ function CardSearch({ data }: { data: MasterData }) {
               <CardTile
                 card={card}
                 printingCount={printingCountsByCardId.get(card.card_id) ?? 0}
+                hasUnverifiedPrinting={cardIdsWithUnverifiedPrintings.has(card.card_id)}
                 backLabel={BACK_LABEL}
               />
             </li>
@@ -250,6 +256,7 @@ function CardSearch({ data }: { data: MasterData }) {
                 card={card}
                 setcode={setcode}
                 printingCount={setcode.printings.length}
+                hasUnverifiedPrinting={hasUnverifiedPrinting(setcode.printings)}
                 backLabel={BACK_LABEL}
               />
             </li>

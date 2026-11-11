@@ -47,3 +47,19 @@ export function getVerifiedArtworks(printings: Printing[]): string[] {
   }
   return artworks;
 }
+
+// True when at least one of the printings has not been verified. A list with no printings has none.
+export function hasUnverifiedPrinting(printings: Printing[]): boolean {
+  return printings.some((printing) => !printing.verified);
+}
+
+// The ids of the cards that have an unverified printing in ANY of their setcodes.
+export function getCardIdsWithUnverifiedPrintings(setcodes: { card_id: string; printings: Printing[] }[]): Set<string> {
+  const cardIds = new Set<string>();
+  for (const setcode of setcodes) {
+    if (hasUnverifiedPrinting(setcode.printings)) {
+      cardIds.add(setcode.card_id);
+    }
+  }
+  return cardIds;
+}

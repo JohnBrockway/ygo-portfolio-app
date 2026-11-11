@@ -6,6 +6,7 @@ import { CardTile } from "../components/CardTile";
 import { getAvailableImages } from "../data/images";
 import type { AvailableImage } from "../data/images";
 import { loadMasterData } from "../data/masterData";
+import { hasUnverifiedPrinting } from "../data/printings";
 import type { MasterData } from "../data/types";
 
 type SetRecord = MasterData["sets"][number];
@@ -135,6 +136,7 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
               card={card}
               setcode={row.setcode}
               printingCount={row.setcode.printings.length}
+              hasUnverifiedPrinting={hasUnverifiedPrinting(row.setcode.printings)}
               backLabel={card.title}
             />
           </li>
