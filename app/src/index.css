@@ -18,6 +18,8 @@
 
   --nav-height: 3.5rem;
   --sidebar-width: 12rem;
+
+  --danger: #f7768e;
 }
 
 * {
@@ -625,4 +627,39 @@ a {
 .edition-label {
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stepper .action-button {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+}
+
+.stepper-value {
+  min-width: 1.25rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.error-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--danger);
+  border-radius: 0.5rem;
+}
+
+.error-banner p {
+  margin: 0;
 }

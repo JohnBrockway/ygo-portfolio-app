@@ -1,6 +1,10 @@
 import type { Edition } from "./types";
 import { IndexedDbConnection, requestPersistentStorage, requestToPromise } from "./indexedDb";
 
+// The database layer. Only lists.ts may call the functions that change data (changeEntryQuantityInDatabase,
+// clearListsInDatabase): it keeps memory and the other tabs in step with the database, and a direct call
+// would skip that. Reading with loadListsFromDatabase is fine anywhere (e.g. the dev panel).
+
 const DB_NAME = "ygo-lists";
 const DB_VERSION = 1;
 
@@ -38,10 +42,10 @@ export interface EntryRecord {
   dirty: number;
 }
 
-export interface ListsSummary {
+// Everything on disk, for loading into memory.
+export interface ListsData {
   lists: ListRecord[];
-  entryCount: number;
-  dirtyEntryCount: number;
+  entries: EntryRecord[];
 }
 
 // --- Opening the database ---
@@ -108,22 +112,47 @@ async function ensureBuiltInLists(connection: IndexedDbConnection): Promise<void
 
 // --- Operations ---
 
-export async function getListsSummary(): Promise<ListsSummary> {
+export async function loadListsFromDatabase(): Promise<ListsData> {
   const connection = await getListsConnection();
   return connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readonly", async (tx) => {
     const lists: ListRecord[] = await requestToPromise(tx.objectStore(LISTS_STORE).getAll());
     lists.sort((a, b) => a.order - b.order);
 
-    const entries = tx.objectStore(ENTRIES_STORE);
-    const entryCount = await requestToPromise(entries.count());
-    const dirtyEntryCount = await requestToPromise(entries.index(BY_DIRTY_INDEX).count(1));
+    const entries: EntryRecord[] = await requestToPromise(tx.objectStore(ENTRIES_STORE).getAll());
 
-    return { lists, entryCount, dirtyEntryCount };
+    return { lists, entries };
+  });
+}
+
+// Changes one entry's quantity inside a single transaction, so the current quantity is read and the new one written
+// with nothing able to write in between, even from another tab (IndexedDB runs transactions that write to the same
+// store one at a time, across every tab). `change` gets the current quantity (0 if the entry isn't on the list) and
+// returns the new one. Resolves with the entry as saved, or null if nothing needed saving.
+export async function changeEntryQuantityInDatabase(
+  listId: string,
+  printingId: string,
+  edition: Edition,
+  change: (current: number) => number,
+): Promise<EntryRecord | null> {
+  const connection = await getListsConnection();
+  return connection.runTransaction([ENTRIES_STORE], "readwrite", async (tx) => {
+    const store = tx.objectStore(ENTRIES_STORE);
+    const existing: EntryRecord | undefined = await requestToPromise(store.get([listId, printingId, edition]));
+    const current = existing === undefined ? 0 : existing.quantity;
+
+    const quantity = Math.max(change(current), 0);
+    if (quantity === current) {
+      return null;
+    }
+
+    const entry: EntryRecord = { listId, printingId, edition, quantity, updatedAt: Date.now(), dirty: 1 };
+    await requestToPromise(store.put(entry));
+    return entry;
   });
 }
 
 // Dev tool: wipes every list and entry, then puts the built-in lists back.
-export async function clearLists(): Promise<void> {
+export async function clearListsInDatabase(): Promise<void> {
   const connection = await getListsConnection();
   await connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readwrite", async (tx) => {
     await Promise.all([

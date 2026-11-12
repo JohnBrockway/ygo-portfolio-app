@@ -145,12 +145,12 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
             );
           }
 
-          // Only printings the build has given an id can be marked, later. Versions that only exist as drafts can't.
+          // Only printings the build has given an id can be marked. Versions that only exist as drafts can't.
           const editionCells =
             printing.printing_id === null ? (
               <p className="muted">Can't be marked until it has been exported and built into the data.</p>
             ) : (
-              <EditionCells editions={editions} />
+              <EditionCells editions={editions} printingId={printing.printing_id} />
             );
 
           return (

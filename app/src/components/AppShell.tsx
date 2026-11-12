@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { ListsErrorBanner } from "./ListsErrorBanner";
 
 const NAV_ITEMS = [
   { to: "/sets", label: "Sets" },
@@ -21,7 +22,8 @@ export function AppShell() {
           </NavLink>
         ))}
       </nav>
-      <main className="content">
+     <main className="content">
+        <ListsErrorBanner />
         <ErrorBoundary key={location.pathname}>
           <Outlet />
         </ErrorBoundary>
