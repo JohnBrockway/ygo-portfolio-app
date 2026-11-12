@@ -124,10 +124,16 @@ export async function loadListsFromDatabase(): Promise<ListsData> {
   });
 }
 
+function getMaxQuantity(listId: string): number {
+  return listId === OWNED_LIST_ID ? Infinity : 1;
+}
+
 // Changes one entry's quantity inside a single transaction, so the current quantity is read and the new one written
 // with nothing able to write in between, even from another tab (IndexedDB runs transactions that write to the same
 // store one at a time, across every tab). `change` gets the current quantity (0 if the entry isn't on the list) and
-// returns the new one. Resolves with the entry as saved, or null if nothing needed saving.
+// returns the new one, which is kept between 0 and the list's maximum. Below 0 is clamped quietly, because a stale
+// screen can ask for it (another tab already removed the entry). Above the maximum is a mistake in the caller, so it
+// is clamped too but logged, should be impossible. Resolves with the entry as saved, or null if nothing needed saving.
 export async function changeEntryQuantityInDatabase(
   listId: string,
   printingId: string,
@@ -140,7 +146,12 @@ export async function changeEntryQuantityInDatabase(
     const existing: EntryRecord | undefined = await requestToPromise(store.get([listId, printingId, edition]));
     const current = existing === undefined ? 0 : existing.quantity;
 
-    const quantity = Math.max(change(current), 0);
+    const wanted = change(current);
+    const maxQuantity = getMaxQuantity(listId);
+    if (wanted > maxQuantity) {
+      console.warn(`Asked for ${wanted} of one edition on list "${listId}", which holds at most ${maxQuantity}`);
+    }
+    const quantity = Math.min(Math.max(wanted, 0), maxQuantity);
     if (quantity === current) {
       return null;
     }

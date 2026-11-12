@@ -1,4 +1,4 @@
-import { changeEntryQuantity, getEntry, useLiveLists } from "../data/lists";
+import { changeEntryQuantity, getEntryQuantityInList, useLiveLists } from "../data/lists";
 import { OWNED_LIST_ID } from "../data/listsDb";
 import type { Edition } from "../data/types";
 
@@ -14,8 +14,7 @@ export function OwnedStepper({
 }) {
   const lists = useLiveLists();
   const isReady = lists.status === "ready";
-  const entry = getEntry(lists, OWNED_LIST_ID, printingId, edition);
-  const owned = entry === undefined ? 0 : entry.quantity;
+  const owned = getEntryQuantityInList(lists, OWNED_LIST_ID, printingId, edition);
 
   return (
     <div className="stepper" role="group" aria-label={`Owned, ${label}`}>

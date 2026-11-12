@@ -20,6 +20,7 @@
   --sidebar-width: 12rem;
 
   --danger: #f7768e;
+  --heart: #f7768e;
 }
 
 * {
@@ -645,6 +646,19 @@ a {
   min-width: 1.25rem;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+.list-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 1.75rem;
+  padding: 0;
+}
+
+.list-button[aria-pressed="true"] {
+  color: var(--heart);
 }
 
 .error-banner {

@@ -154,17 +154,18 @@ export function clearLists(): Promise<void> {
   });
 }
 
-export function getEntry(
+export function getEntryQuantityInList(
   listsState: ListsState,
   listId: string,
   printingId: string,
   edition: Edition,
-): EntryRecord | undefined {
+): number {
   const entries = listsState.byPrinting.get(printingId);
   if (entries === undefined) {
-    return undefined;
+    return 0;
   }
-  return entries.find((entry) => entry.listId === listId && entry.edition === edition);
+  const entry = entries.find((entry) => entry.listId === listId && entry.edition === edition);
+  return entry === undefined ? 0 : entry.quantity;
 }
 
 function hasSameKey(entry: EntryRecord, other: EntryRecord): boolean {
@@ -180,6 +181,7 @@ function applyEntry(entry: EntryRecord): void {
 
 // Changes how many of this printing's edition are on the list (0 removes it). `change` gets the quantity the
 // database has right now and returns the new one: (current) => current + 1, or () => 1 to put it on a list.
+// The database keeps the result between 0 and the list's maximum (1 on every list except Owned).
 // The new quantity shows up once it has been saved.
 export function changeEntryQuantity(
   listId: string,
