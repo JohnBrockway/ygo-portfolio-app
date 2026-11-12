@@ -1,4 +1,4 @@
-import { changeEntryQuantity, getEntryQuantityInList, useLiveLists } from "../data/lists";
+import { changeEntryQuantity, getEntryQuantity, useLiveLists } from "../data/lists";
 import { WISHLIST_LIST_ID } from "../data/listsDb";
 import type { Edition } from "../data/types";
 
@@ -32,7 +32,7 @@ export function WishlistButton({
 }) {
   const lists = useLiveLists();
   const isReady = lists.status === "ready";
-  const onWishlist = getEntryQuantityInList(lists, WISHLIST_LIST_ID, printingId, edition) > 0;
+  const onWishlist = getEntryQuantity(lists, WISHLIST_LIST_ID, printingId, edition) > 0;
 
   return (
     <button

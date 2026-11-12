@@ -154,7 +154,7 @@ export function clearLists(): Promise<void> {
   });
 }
 
-export function getEntryQuantityInList(
+export function getEntryQuantity(
   listsState: ListsState,
   listId: string,
   printingId: string,
