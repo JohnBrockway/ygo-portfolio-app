@@ -2,8 +2,8 @@ import type { Edition } from "./types";
 import { IndexedDbConnection, requestPersistentStorage, requestToPromise } from "./indexedDb";
 
 // The database layer. Only lists.ts may call the functions that change data (changeEntryQuantityInDatabase,
-// clearListsInDatabase): it keeps memory and the other tabs in step with the database, and a direct call
-// would skip that. Reading with loadListsFromDatabase is fine anywhere (e.g. the dev panel).
+// createListInDatabase, clearListsInDatabase): it keeps memory and the other tabs in step with the database, and a
+// direct call would skip that. Reading with loadListsFromDatabase is fine anywhere (e.g. the dev panel).
 
 const DB_NAME = "ygo-lists";
 const DB_VERSION = 1;
@@ -47,6 +47,18 @@ export interface ListsData {
   lists: ListRecord[];
   entries: EntryRecord[];
 }
+
+export type ListNameProblem = "empty" | "duplicate";
+
+export interface InvalidListName {
+  status: "invalid-name";
+  reason: ListNameProblem;
+}
+
+export type SaveListInDatabaseResult =
+  | { status: "saved"; list: ListRecord }
+  | InvalidListName
+  | { status: "failed" };
 
 // --- Opening the database ---
 
@@ -159,6 +171,51 @@ export async function changeEntryQuantityInDatabase(
     const entry: EntryRecord = { listId, printingId, edition, quantity, updatedAt: Date.now(), dirty: 1 };
     await requestToPromise(store.put(entry));
     return entry;
+  });
+}
+
+function checkListName(
+  name: string,
+  otherLists: readonly ListRecord[],
+): { status: "valid"; name: string } | InvalidListName {
+  const trimmedName = name.trim();
+  if (trimmedName === "") {
+    return { status: "invalid-name", reason: "empty" };
+  }
+  const lowerCaseName = trimmedName.toLowerCase();
+  if (otherLists.some((other) => other.name.toLowerCase() === lowerCaseName)) {
+    return { status: "invalid-name", reason: "duplicate" };
+  }
+  return { status: "valid", name: trimmedName };
+}
+
+// Adds a user-made list after the existing ones. The name is checked against the lists that are in the database right
+// now, inside the same transaction, so two tabs can't both create the same name. A refused name is not a failure of the
+// database: it resolves with the reason, and nothing is saved.
+export async function createListInDatabase(name: string): Promise<SaveListInDatabaseResult> {
+  const connection = await getListsConnection();
+  return connection.runTransaction([LISTS_STORE], "readwrite", async (tx): Promise<SaveListInDatabaseResult> => {
+    const store = tx.objectStore(LISTS_STORE);
+    const existingLists: ListRecord[] = await requestToPromise(store.getAll());
+
+    const nameCheck = checkListName(name, existingLists);
+    if (nameCheck.status === "invalid-name") {
+      return nameCheck;
+    }
+
+    const now = Date.now();
+    const list: ListRecord = {
+      id: crypto.randomUUID(),
+      name: nameCheck.name,
+      order: existingLists.reduce((highest, existing) => Math.max(highest, existing.order), -1) + 1,
+      builtIn: false,
+      createdAt: now,
+      updatedAt: now,
+      // Unlike the seeded built-in lists, this exists on this device only, so it still has to be synced.
+      dirty: 1,
+    };
+    await requestToPromise(store.add(list));
+    return { status: "saved", list };
   });
 }
 

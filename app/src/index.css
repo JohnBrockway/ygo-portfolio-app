@@ -480,6 +480,29 @@ a {
   cursor: default;
 }
 
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+}
+
+.inline-form .text-input {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
+.inline-form .action-button {
+  height: auto;
+  min-height: 2rem;
+}
+
+.form-error {
+  margin: 0.5rem 0 0;
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
 /* Tile image made of several images stacked like a pile of cards (see TileStack). It reuses the .tile-image box;
    the area sits inside it where the box's 0.5rem padding would be, and TileStack places each image in it. */
 

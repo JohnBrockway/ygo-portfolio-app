@@ -1,6 +1,11 @@
 import { useSyncExternalStore } from "react";
-import { changeEntryQuantityInDatabase, clearListsInDatabase, loadListsFromDatabase } from "./listsDb";
-import type { EntryRecord, ListRecord } from "./listsDb";
+import {
+  changeEntryQuantityInDatabase,
+  clearListsInDatabase,
+  createListInDatabase,
+  loadListsFromDatabase,
+} from "./listsDb";
+import type { EntryRecord, ListRecord, SaveListInDatabaseResult } from "./listsDb";
 import type { Edition } from "./types";
 
 export interface ListsState {
@@ -52,7 +57,8 @@ function makeState(
 
 // The database is the source of truth; this is a copy of it in memory, so components can read synchronously.
 // This memory copy only ever changes based on reading the database (never ahead of it).
-// Components should only ever read through useLiveLists and change entries through changeEntryQuantity.
+// Components should only ever read through useLiveLists, change entries through changeEntryQuantity and add lists
+// through createList.
 // useSyncExternalStore needs getLists to return the same object until something changes, so the state is
 // fully replaced (not edited) on every change.
 let state: ListsState = makeState("loading", null, [], []);
@@ -94,9 +100,10 @@ export function useLiveLists(): ListsState {
 // Everything that touches the database goes through this queue, one operation at a time, and each result is
 // applied to memory before the next operation starts. So memory is always the result of the latest operation,
 // never a slow read landing on top of a newer write.
-let queue: Promise<void> = Promise.resolve();
+// The queue's own value is never read, only whether the last operation has finished, hence unknown.
+let queue: Promise<unknown> = Promise.resolve();
 
-function enqueue(operation: () => Promise<void>): Promise<void> {
+function enqueue<T>(operation: () => Promise<T>): Promise<T> {
   const result = queue.then(operation);
   // A failed operation must not stop the ones queued behind it.
   queue = result.catch(() => undefined);
@@ -172,11 +179,20 @@ function hasSameKey(entry: EntryRecord, other: EntryRecord): boolean {
   return entry.listId === other.listId && entry.printingId === other.printingId && entry.edition === other.edition;
 }
 
-// Puts a committed entry into memory.
+// Puts a committed entry into memory, in place of memory's copy of the same entry if it has one. The committed entry
+// is what the database holds now so it replaces memory's copy. Nothing is written to the database here.
 function applyEntry(entry: EntryRecord): void {
   const otherEntries = state.activeEntries.filter((other) => !hasSameKey(entry, other));
   const activeEntries = entry.quantity > 0 ? [...otherEntries, entry] : otherEntries;
   setState(makeState(state.status, state.error, state.lists, activeEntries));
+}
+
+// Puts a committed list into memory, in place of memory's copy of the same list if it has one. The committed list is
+// what the database holds now so it replaces memory's copy. Nothing is written to the database here.
+function applyList(list: ListRecord): void {
+  const otherLists = state.lists.filter((other) => other.id !== list.id);
+  const lists = [...otherLists, list].sort((a, b) => a.order - b.order);
+  setState(makeState(state.status, state.error, lists, state.activeEntries));
 }
 
 // Changes how many of this printing's edition are on the list (0 removes it). `change` gets the quantity the
@@ -204,6 +220,30 @@ export function changeEntryQuantity(
       // written to needs attention, so stop changes and show the banner until a reload works.
       console.error("Couldn't save list entry", error);
       setErrorState(error);
+    }
+  });
+}
+
+// Adds a new list of the user's own after the existing ones. The new list shows up once it has been saved.
+// "invalid-name" (empty, or already used by another list) is the caller's to show, and is not an error state: nothing
+// went wrong with the database. "failed" on the other hand is an error, so should be caught by the banner.
+export function createList(name: string): Promise<SaveListInDatabaseResult> {
+  return enqueue(async (): Promise<SaveListInDatabaseResult> => {
+    if (state.status !== "ready") {
+      // Nothing is saved while lists are loading or in error (the form is disabled then, so this is a stale click).
+      return { status: "failed" };
+    }
+    try {
+      const result = await createListInDatabase(name);
+      if (result.status === "saved") {
+        applyList(result.list);
+        notifyOtherTabs();
+      }
+      return result;
+    } catch (error) {
+      console.error("Couldn't create list", error);
+      setErrorState(error);
+      return { status: "failed" };
     }
   });
 }
