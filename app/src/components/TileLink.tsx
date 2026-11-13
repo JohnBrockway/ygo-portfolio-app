@@ -11,7 +11,7 @@ const MAX_STACKED_IMAGES = 3;
 const UNVERIFIED_LABEL = "Some printings are not verified";
 
 // The CSS class that tints a tile to hint at its card type.
-function tileTypeClass(cardType: string | null | undefined): string {
+function tileTypeClass(cardType: string): string {
   switch (cardType) {
     case "Monster":
       return "tile tile-monster";

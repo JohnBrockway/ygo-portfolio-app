@@ -259,6 +259,7 @@ a {
 }
 
 .tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%; /* tiles in the same row end up the same height */
@@ -403,7 +404,6 @@ a {
   border: 1px solid var(--border);
   border-radius: 0.375rem;
 }
-
 
 /* Edit mode: choosing which of the card's images a printing shows. */
 
@@ -580,10 +580,6 @@ a {
 
 .tile-trap .tag {
   border-color: var(--tile-trap-tag-border);
-}
-
-.tile {
-  position: relative;
 }
 
 .tile-unverified {

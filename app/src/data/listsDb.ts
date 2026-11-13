@@ -1,5 +1,5 @@
-import type { Edition } from "./types";
 import { IndexedDbConnection, requestPersistentStorage, requestToPromise } from "./indexedDb";
+import type { Edition } from "./types";
 
 // The database layer. Only lists.ts may call the functions that change data (changeEntryQuantityInDatabase,
 // createListInDatabase, renameListInDatabase, deleteListInDatabase, clearListsInDatabase): it keeps memory and the
@@ -250,7 +250,7 @@ export async function createListInDatabase(name: string): Promise<SaveResult> {
 }
 
 // Renames a user-made list. Checked like createListInDatabase, against the other lists that are in the database right
-// now. Built-in lists, and lists that don't exist or are deleted, throw (see findUserListOrThrow). Giving the list the
+// now. Built-in lists, and lists that don't exist or are deleted, throw (see findMutableListOrThrow). Giving the list the
 // name it already has resolves as saved without writing.
 export async function renameListInDatabase(listId: string, name: string): Promise<SaveResult> {
   const connection = await getListsConnection();
@@ -279,7 +279,7 @@ export async function renameListInDatabase(listId: string, name: string): Promis
 
 // Deletes a user-made list: marks it deleted and removes every entry linking to it, all in one transaction so a list is never
 // deleted with live entries left behind. Both are kept in the database until synced (soft delete). Built-in lists, and
-// lists that don't exist or are already deleted, throw (see findUserListOrThrow). Resolves with the list as saved.
+// lists that don't exist or are already deleted, throw (see findMutableListOrThrow). Resolves with the list as saved.
 export async function deleteListInDatabase(listId: string): Promise<ListRecord> {
   const connection = await getListsConnection();
   return connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readwrite", async (tx): Promise<ListRecord> => {
@@ -291,7 +291,7 @@ export async function deleteListInDatabase(listId: string): Promise<ListRecord> 
     // Entry keys are arrays: [listId, printingId, edition]. IndexedDB sorts keys by comparing them element by element
     // (an array that is a prefix of another sorts first), and any array sorts after any string. So:
     // - [listId] is below every key of this list (same first element, but shorter), and
-    // - [listId, []] is above every key of this list (same first element, then an array in the place where reals keys
+    // - [listId, []] is above every key of this list (same first element, then an array in the place where real keys
     //   have a string, arrays being sorted above strings as a rule).
     // A key of another list is decided by its first element alone, which differs from listId, so it falls outside.
     const listEntries: EntryRecord[] = await requestToPromise(

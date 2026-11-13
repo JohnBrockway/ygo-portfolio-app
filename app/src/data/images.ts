@@ -53,7 +53,7 @@ export function getArtworkImageUrl(card: Card, artwork: string): string | null {
   return imageUrl(CARD_IMAGE_BASE, getArtworkImageFile(card, artwork));
 }
 
-// The URLs of the images to show for a card in a tile:all verified artworks that have an image,
+// The URLs of the images to show for a card in a tile: all verified artworks that have an image,
 // or the card's default image if there are none. Empty (show the placeholder) if the card has no images at all.
 export function getTileImageUrls(card: Card, artworks: string[]): string[] {
   const urls: string[] = [];

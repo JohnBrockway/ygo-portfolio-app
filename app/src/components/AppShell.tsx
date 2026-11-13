@@ -22,7 +22,7 @@ export function AppShell() {
           </NavLink>
         ))}
       </nav>
-     <main className="content">
+      <main className="content">
         <ListsErrorBanner />
         <ErrorBoundary key={location.pathname}>
           <Outlet />

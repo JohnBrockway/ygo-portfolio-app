@@ -1,4 +1,4 @@
-import type { Printing } from "./types";
+import type { Printing, SetCode } from "./types";
 
 // A printing as the printing page shows it. printing_id is null for a version that only exists as an edit mode
 // draft: the build hasn't given it an id yet, so nothing (marks, later) can be saved against it.
@@ -54,7 +54,7 @@ export function hasUnverifiedPrinting(printings: Printing[]): boolean {
 }
 
 // The ids of the cards that have an unverified printing in ANY of their setcodes.
-export function getCardIdsWithUnverifiedPrintings(setcodes: { card_id: string; printings: Printing[] }[]): Set<string> {
+export function getCardIdsWithUnverifiedPrintings(setcodes: SetCode[]): Set<string> {
   const cardIds = new Set<string>();
   for (const setcode of setcodes) {
     if (hasUnverifiedPrinting(setcode.printings)) {

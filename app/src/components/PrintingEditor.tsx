@@ -1,8 +1,8 @@
 import { getAvailableImages } from "../data/images";
 import { makeDraft } from "../data/overrideDrafts";
 import type { OverrideDraft } from "../data/overrideDrafts";
-import type { DisplayPrinting } from "../data/printings";
 import type { DraftKind } from "../data/printingRows";
+import type { DisplayPrinting } from "../data/printings";
 import type { Card } from "../data/types";
 
 // Edit mode's version of PrintingArt: image picker & label text field.

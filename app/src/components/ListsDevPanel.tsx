@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { isStoragePersisted } from "../data/indexedDb";
 import { clearLists } from "../data/lists";
-import { loadListsFromDatabase, type ListsData } from "../data/listsDb";
+import { loadListsFromDatabase } from "../data/listsDb";
+import type { ListsData } from "../data/listsDb";
 
 // Dev-only readout of the local lists database.
 export function ListsDevPanel() {

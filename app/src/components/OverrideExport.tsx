@@ -104,7 +104,7 @@ export function OverrideExport() {
         ) : null}
       </p>
       <p className="muted">
-        Replace {EXPORT_FILE_NAME} with the downloaded file in the build pipeine, then run. Check failures.jsonl for
+        Replace {EXPORT_FILE_NAME} with the downloaded file in the build pipeline, then run. Check failures.jsonl for
         override_ lines first: an entry the build rejected isn't in the data, so it isn't in this file either.
       </p>
     </>

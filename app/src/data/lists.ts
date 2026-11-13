@@ -176,12 +176,12 @@ export function getEntryQuantity(
   if (entries === undefined) {
     return 0;
   }
-  const entry = entries.find((entry) => entry.listId === listId && entry.edition === edition);
+  const entry = entries.find((candidate) => candidate.listId === listId && candidate.edition === edition);
   return entry === undefined ? 0 : entry.quantity;
 }
 
 // One shared empty array, so callers can use the result as a dependency of useMemo without
-// it looking changed on every render).
+// it looking changed on every render.
 const NO_ENTRIES: readonly EntryRecord[] = [];
 
 // Every entry on the list (none removed), in no particular order.

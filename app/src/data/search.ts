@@ -20,7 +20,7 @@ export function matchesAllTokens(text: string, tokens: string[]): boolean {
 export function matchesSetNumberAndTitle(
   lowerSetNumber: string,
   lowerTitle: string,
-  tokens: string[]
+  tokens: string[],
 ): boolean {
   let setNumberHit = false;
   for (const token of tokens) {

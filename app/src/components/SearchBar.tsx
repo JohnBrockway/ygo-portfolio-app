@@ -1,11 +1,11 @@
-type Props = {
+type SearchBarProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   label: string;
 };
 
-export function SearchBar({ value, onChange, placeholder, label }: Props) {
+export function SearchBar({ value, onChange, placeholder, label }: SearchBarProps) {
   return (
     <input
       type="search"
