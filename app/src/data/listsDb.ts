@@ -2,8 +2,9 @@ import type { Edition } from "./types";
 import { IndexedDbConnection, requestPersistentStorage, requestToPromise } from "./indexedDb";
 
 // The database layer. Only lists.ts may call the functions that change data (changeEntryQuantityInDatabase,
-// createListInDatabase, clearListsInDatabase): it keeps memory and the other tabs in step with the database, and a
-// direct call would skip that. Reading with loadListsFromDatabase is fine anywhere (e.g. the dev panel).
+// createListInDatabase, renameListInDatabase, deleteListInDatabase, clearListsInDatabase): it keeps memory and the
+// other tabs in step with the database, and a direct call would skip that. Reading with loadListsFromDatabase is
+// fine anywhere (e.g. the dev panel).
 
 const DB_NAME = "ygo-lists";
 const DB_VERSION = 1;
@@ -25,6 +26,7 @@ export interface ListRecord {
   name: string;
   order: number;
   builtIn: boolean;
+  deleted: boolean;
   createdAt: number;
   updatedAt: number;
   // Not a boolean because IndexedDB can't index booleans
@@ -42,7 +44,8 @@ export interface EntryRecord {
   dirty: number;
 }
 
-// Everything on disk, for loading into memory.
+// Everything on disk, for loading into memory. Includes deleted lists, kept
+// until deletion has been synced to permanent storage.
 export interface ListsData {
   lists: ListRecord[];
   entries: EntryRecord[];
@@ -50,15 +53,18 @@ export interface ListsData {
 
 export type ListNameProblem = "empty" | "duplicate";
 
-export interface InvalidListName {
-  status: "invalid-name";
-  reason: ListNameProblem;
+// What every change to the lists reports, in both layers. `status` says what happened; the other fields are only
+// filled in for the statuses that need them.
+// - "saved": the database now holds what was asked for. `list` is the list as saved when one was created or renamed.
+// - "invalid-name": nothing was saved because the list name was refused; `nameProblem` says why. That is not a
+//   failure of the database.
+// - "failed": the save didn't happen (a database error, which the banner already shows, or the lists weren't ready).
+//   Only lists.ts reports this; the database layer throws instead.
+export interface SaveResult {
+  status: "saved" | "invalid-name" | "failed";
+  list: ListRecord | null;
+  nameProblem: ListNameProblem | null;
 }
-
-export type SaveListInDatabaseResult =
-  | { status: "saved"; list: ListRecord }
-  | InvalidListName
-  | { status: "failed" };
 
 // --- Opening the database ---
 
@@ -112,6 +118,7 @@ async function ensureBuiltInLists(connection: IndexedDbConnection): Promise<void
         const record: ListRecord = {
           ...list,
           builtIn: true,
+          deleted: false,
           createdAt: now,
           updatedAt: now,
           dirty: 0,
@@ -153,7 +160,12 @@ export async function changeEntryQuantityInDatabase(
   change: (current: number) => number,
 ): Promise<EntryRecord | null> {
   const connection = await getListsConnection();
-  return connection.runTransaction([ENTRIES_STORE], "readwrite", async (tx) => {
+  return connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readwrite", async (tx) => {
+    const list: ListRecord | undefined = await requestToPromise(tx.objectStore(LISTS_STORE).get(listId));
+    if (list === undefined || list.deleted) {
+      throw new Error(`Can't change entries of list "${listId}": it doesn't exist or has been deleted`);
+    }
+
     const store = tx.objectStore(ENTRIES_STORE);
     const existing: EntryRecord | undefined = await requestToPromise(store.get([listId, printingId, edition]));
     const current = existing === undefined ? 0 : existing.quantity;
@@ -174,48 +186,129 @@ export async function changeEntryQuantityInDatabase(
   });
 }
 
-function checkListName(
-  name: string,
-  otherLists: readonly ListRecord[],
-): { status: "valid"; name: string } | InvalidListName {
-  const trimmedName = name.trim();
+// What is wrong with a list name, or null if it is fine. otherLists must be the lists the name has to differ from: filter
+// deleted, and the list being renamed before calling.
+function findListNameProblem(trimmedName: string, otherLists: readonly ListRecord[]): ListNameProblem | null {
   if (trimmedName === "") {
-    return { status: "invalid-name", reason: "empty" };
+    return "empty";
   }
   const lowerCaseName = trimmedName.toLowerCase();
   if (otherLists.some((other) => other.name.toLowerCase() === lowerCaseName)) {
-    return { status: "invalid-name", reason: "duplicate" };
+    return "duplicate";
   }
-  return { status: "valid", name: trimmedName };
+  return null;
+}
+
+// Finds a list the user may rename or delete: it must exist, not be deleted, and not be built in. Anything else is a
+// mistake in the caller (the UI doesn't offer these actions) or a stale screen, so it throws.
+function findMutableListOrThrow(lists: readonly ListRecord[], listId: string): ListRecord {
+  const list = lists.find((other) => other.id === listId);
+  if (list === undefined || list.deleted) {
+    throw new Error(`List "${listId}" doesn't exist or has been deleted`);
+  }
+  if (list.builtIn) {
+    throw new Error(`The built-in list "${list.name}" can't be renamed or deleted`);
+  }
+  return list;
 }
 
 // Adds a user-made list after the existing ones. The name is checked against the lists that are in the database right
 // now, inside the same transaction, so two tabs can't both create the same name. A refused name is not a failure of the
-// database: it resolves with the reason, and nothing is saved.
-export async function createListInDatabase(name: string): Promise<SaveListInDatabaseResult> {
+// database: it resolves with "invalid-name" and the reason, and nothing is saved.
+export async function createListInDatabase(name: string): Promise<SaveResult> {
   const connection = await getListsConnection();
-  return connection.runTransaction([LISTS_STORE], "readwrite", async (tx): Promise<SaveListInDatabaseResult> => {
+  return connection.runTransaction([LISTS_STORE], "readwrite", async (tx): Promise<SaveResult> => {
     const store = tx.objectStore(LISTS_STORE);
     const existingLists: ListRecord[] = await requestToPromise(store.getAll());
 
-    const nameCheck = checkListName(name, existingLists);
-    if (nameCheck.status === "invalid-name") {
-      return nameCheck;
+    const trimmedName = name.trim();
+    // A deleted list no longer holds its name.
+    const nameProblem = findListNameProblem(
+      trimmedName,
+      existingLists.filter((existing) => !existing.deleted),
+    );
+    if (nameProblem !== null) {
+      return { status: "invalid-name", list: null, nameProblem };
     }
 
     const now = Date.now();
     const list: ListRecord = {
       id: crypto.randomUUID(),
-      name: nameCheck.name,
+      name: trimmedName,
+      // Counts deleted lists so an order is never reused while its tombstone is still around.
       order: existingLists.reduce((highest, existing) => Math.max(highest, existing.order), -1) + 1,
       builtIn: false,
+      deleted: false,
       createdAt: now,
       updatedAt: now,
       // Unlike the seeded built-in lists, this exists on this device only, so it still has to be synced.
       dirty: 1,
     };
     await requestToPromise(store.add(list));
-    return { status: "saved", list };
+    return { status: "saved", list, nameProblem: null };
+  });
+}
+
+// Renames a user-made list. Checked like createListInDatabase, against the other lists that are in the database right
+// now. Built-in lists, and lists that don't exist or are deleted, throw (see findUserListOrThrow). Giving the list the
+// name it already has resolves as saved without writing.
+export async function renameListInDatabase(listId: string, name: string): Promise<SaveResult> {
+  const connection = await getListsConnection();
+  return connection.runTransaction([LISTS_STORE], "readwrite", async (tx): Promise<SaveResult> => {
+    const store = tx.objectStore(LISTS_STORE);
+    const existingLists: ListRecord[] = await requestToPromise(store.getAll());
+    const list = findMutableListOrThrow(existingLists, listId);
+
+    const trimmedName = name.trim();
+    const nameProblem = findListNameProblem(
+      trimmedName,
+      existingLists.filter((existing) => existing.id !== listId && !existing.deleted),
+    );
+    if (nameProblem !== null) {
+      return { status: "invalid-name", list: null, nameProblem };
+    }
+    if (trimmedName === list.name) {
+      return { status: "saved", list, nameProblem: null };
+    }
+
+    const renamedList: ListRecord = { ...list, name: trimmedName, updatedAt: Date.now(), dirty: 1 };
+    await requestToPromise(store.put(renamedList));
+    return { status: "saved", list: renamedList, nameProblem: null };
+  });
+}
+
+// Deletes a user-made list: marks it deleted and removes every entry linking to it, all in one transaction so a list is never
+// deleted with live entries left behind. Both are kept in the database until synced (soft delete). Built-in lists, and
+// lists that don't exist or are already deleted, throw (see findUserListOrThrow). Resolves with the list as saved.
+export async function deleteListInDatabase(listId: string): Promise<ListRecord> {
+  const connection = await getListsConnection();
+  return connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readwrite", async (tx): Promise<ListRecord> => {
+    const listStore = tx.objectStore(LISTS_STORE);
+    const entryStore = tx.objectStore(ENTRIES_STORE);
+    const existingLists: ListRecord[] = await requestToPromise(listStore.getAll());
+    const list = findMutableListOrThrow(existingLists, listId);
+
+    // Entry keys are arrays: [listId, printingId, edition]. IndexedDB sorts keys by comparing them element by element
+    // (an array that is a prefix of another sorts first), and any array sorts after any string. So:
+    // - [listId] is below every key of this list (same first element, but shorter), and
+    // - [listId, []] is above every key of this list (same first element, then an array in the place where reals keys
+    //   have a string, arrays being sorted above strings as a rule).
+    // A key of another list is decided by its first element alone, which differs from listId, so it falls outside.
+    const listEntries: EntryRecord[] = await requestToPromise(
+      entryStore.getAll(IDBKeyRange.bound([listId], [listId, []])),
+    );
+
+    const now = Date.now();
+    const deletedList: ListRecord = { ...list, deleted: true, updatedAt: now, dirty: 1 };
+    const removedEntries = listEntries
+      .filter((entry) => entry.quantity > 0)
+      .map((entry): EntryRecord => ({ ...entry, quantity: 0, updatedAt: now, dirty: 1 }));
+
+    await Promise.all([
+      requestToPromise(listStore.put(deletedList)),
+      ...removedEntries.map((entry) => requestToPromise(entryStore.put(entry))),
+    ]);
+    return deletedList;
   });
 }
 

@@ -153,6 +153,17 @@ a {
   font-size: 0.875rem;
 }
 
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.row .inline-form {
+  margin-top: 0;
+}
+
 .tag {
   padding: 0 0.4rem;
   border: 1px solid var(--border);
