@@ -1,4 +1,4 @@
-import { changeEntryQuantity, getEntryQuantity, useLiveLists } from "../data/lists";
+import { canChangeLists, changeEntryQuantity, getEntryQuantity, useLiveLists } from "../data/lists";
 import { OWNED_LIST_ID } from "../data/listsDb";
 import type { Edition } from "../data/types";
 
@@ -13,7 +13,7 @@ export function OwnedStepper({
   label: string;
 }) {
   const lists = useLiveLists();
-  const isReady = lists.status === "ready";
+  const canChange = canChangeLists(lists);
   const owned = getEntryQuantity(lists, OWNED_LIST_ID, printingId, edition);
 
   return (
@@ -22,7 +22,7 @@ export function OwnedStepper({
         type="button"
         className="action-button"
         aria-label={`Remove one ${label} copy`}
-        disabled={!isReady || owned === 0}
+        disabled={!canChange || owned === 0}
         onClick={() => void changeEntryQuantity(OWNED_LIST_ID, printingId, edition, (current) => current - 1)}
       >
         −
@@ -32,7 +32,7 @@ export function OwnedStepper({
         type="button"
         className="action-button"
         aria-label={`Add one ${label} copy`}
-        disabled={!isReady}
+        disabled={!canChange}
         onClick={() => void changeEntryQuantity(OWNED_LIST_ID, printingId, edition, (current) => current + 1)}
       >
         +

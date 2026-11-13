@@ -1,11 +1,8 @@
 import type { ReactNode } from "react";
+import { formatCount } from "../data/formatCount";
 import { getVerifiedArtworks } from "../data/printings";
 import type { Card, SetCode } from "../data/types";
 import { TileLink } from "./TileLink";
-
-function formatVersionCount(count: number): string {
-  return count === 1 ? "1 version" : `${count} versions`;
-}
 
 // backLabel is the name of the page this tile is shown on, for the Back link on the page it opens.
 // printingCount is how many printings (rarities and so on) the tile stands for: the setcode's own, or all the card's.
@@ -46,7 +43,7 @@ export function CardTile({
     >
       <div className="tile-meta">
         {setNumberTag}
-        <span className="muted">{formatVersionCount(printingCount)}</span>
+        <span className="muted">{formatCount(printingCount, "version", "versions")}</span>
       </div>
     </TileLink>
   );

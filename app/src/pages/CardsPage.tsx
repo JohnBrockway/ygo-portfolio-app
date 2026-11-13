@@ -4,7 +4,9 @@ import { CardTile } from "../components/CardTile";
 import { GameToggles } from "../components/GameToggles";
 import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
+import { setNumberCollator, titleCollator } from "../data/collators";
 import { getGames, toggleGame } from "../data/games";
+import { indexBy } from "../data/indexBy";
 import { loadMasterData } from "../data/masterData";
 import { getCardIdsWithUnverifiedPrintings, hasUnverifiedPrinting } from "../data/printings";
 import { getRegions, toggleRegion } from "../data/regions";
@@ -24,15 +26,10 @@ type SearchableSetcode = {
 };
 
 // Keeps the DOM small; the heading shows the full match count.
-const MAX_RESULTS_PER_SECTION = 50;
+const MAX_RESULTS = 50;
 
 // This page's name in the Back links of the pages its tiles open.
 const BACK_LABEL = "card search";
-
-// Shared collators: calling localeCompare with options builds a new collator on every call,
-// which is far slower than reusing one. numeric: true sorts "LOB-EN013" before "LOB-EN072".
-const titleCollator = new Intl.Collator();
-const setNumberCollator = new Intl.Collator(undefined, { numeric: true });
 
 // Callers pass a non-empty token list and cards already sorted by title.
 function findCardMatches(sortedCards: Card[], tokens: string[]): Card[] {
@@ -142,8 +139,8 @@ function ResultSection({ title, total, children }: { title: string; total: numbe
       <h2>
         {title} ({total})
       </h2>
-      {total > MAX_RESULTS_PER_SECTION ? (
-        <p className="muted">Showing the first {MAX_RESULTS_PER_SECTION}. Type more to narrow the results.</p>
+      {total > MAX_RESULTS ? (
+        <p className="muted">Showing the first {MAX_RESULTS}. Type more to narrow the results.</p>
       ) : null}
       {children}
     </section>
@@ -155,21 +152,8 @@ function CardSearch({ data }: { data: MasterData }) {
     useFilterParams();
   const tokens = useMemo(() => splitQuery(query), [query]);
 
-  const cardsById = useMemo(() => {
-    const map = new Map<string, Card>();
-    for (const card of data.cards) {
-      map.set(card.card_id, card);
-    }
-    return map;
-  }, [data]);
-
-  const setsById = useMemo(() => {
-    const map = new Map<string, SetRecord>();
-    for (const set of data.sets) {
-      map.set(set.set_id, set);
-    }
-    return map;
-  }, [data]);
+  const cardsById = useMemo(() => indexBy(data.cards, (card) => card.card_id), [data]);
+  const setsById = useMemo(() => indexBy(data.sets, (set) => set.set_id), [data]);
 
   // Sorted once per data load, not per keystroke. Copies, so the shared master data isn't reordered.
   const sortedCards = useMemo(
@@ -232,11 +216,12 @@ function CardSearch({ data }: { data: MasterData }) {
     results = <p className="muted">No regions selected.</p>;
   } else if (tokens.length === 0) {
     // TODO show random sample cards when no query entered
+    results = null;
   } else if (cardMatches.length === 0 && setcodeMatches.length === 0) {
     results = <p className="muted">No cards or printings match “{query.trim()}”.</p>;
   } else {
-    const shownCards = cardMatches.slice(0, MAX_RESULTS_PER_SECTION);
-    const shownSetcodes = setcodeMatches.slice(0, MAX_RESULTS_PER_SECTION - shownCards.length);
+    const shownCards = cardMatches.slice(0, MAX_RESULTS);
+    const shownSetcodes = setcodeMatches.slice(0, MAX_RESULTS - shownCards.length);
     results = (
       <ResultSection title="Results" total={cardMatches.length + setcodeMatches.length}>
         <ul className="tile-grid tile-grid-cards">

@@ -84,6 +84,12 @@ export function getLists(): ListsState {
   return state;
 }
 
+// Lists can only be changed once they have loaded, and not while they are in error (see ListsState.status).
+// The buttons that change lists are disabled otherwise, and changes that still arrive (a stale click) are refused.
+export function canChangeLists(listsState: ListsState): boolean {
+  return listsState.status === "ready";
+}
+
 export function subscribeToLists(listener: () => void): () => void {
   listeners.add(listener);
   return () => {
@@ -223,7 +229,7 @@ const SAVED_WITHOUT_LIST: SaveResult = { status: "saved", list: null, nameProble
 //   database that can't be written to needs attention, so stop changes and show the banner until a reload works.
 function enqueueChange(failureMessage: string, change: () => Promise<SaveResult>): Promise<SaveResult> {
   return enqueue(async () => {
-    if (state.status !== "ready") {
+    if (!canChangeLists(state)) {
       return NOT_SAVED;
     }
     try {

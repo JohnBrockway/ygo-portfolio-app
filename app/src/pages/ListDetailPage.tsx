@@ -5,7 +5,7 @@ import { BackLink } from "../components/BackLink";
 import { ListEntryTile } from "../components/ListEntryTile";
 import { ListMeta } from "../components/ListMeta";
 import { buildFoundPrintingsById, joinEntriesWithMasterData } from "../data/listEntries";
-import { getListEntries, useLiveLists } from "../data/lists";
+import { canChangeLists, getListEntries, useLiveLists } from "../data/lists";
 import type { EntryRecord, ListRecord } from "../data/listsDb";
 import { loadMasterData } from "../data/masterData";
 import type { MasterData } from "../data/types";
@@ -71,7 +71,7 @@ export function ListDetailPage() {
   }, []);
 
   const list = listsState.activeLists.find((candidate) => candidate.id === listId);
-  const changesDisabled = listsState.status !== "ready";
+  const changesDisabled = !canChangeLists(listsState);
 
   let content: ReactNode;
   if (error !== null) {
@@ -83,7 +83,7 @@ export function ListDetailPage() {
     content = (
       <>
         <h1>List not found</h1>
-        <p className="muted">No list matching this link.</p>
+        <p className="muted">No list matches this address.</p>
       </>
     );
   } else {

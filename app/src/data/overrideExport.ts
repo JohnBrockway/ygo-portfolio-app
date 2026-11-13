@@ -1,4 +1,5 @@
 import { getArtworkImageFile } from "./images";
+import { indexBy } from "./indexBy";
 import { draftKey, withoutDraft } from "./overrideDrafts";
 import type { OverrideDraft, OverrideDrafts } from "./overrideDrafts";
 import { cleanLabel } from "./printings";
@@ -15,14 +16,6 @@ export type OverrideBuild = {
   // Drafts left out of the export because what they refer to no longer exists.
   warnings: string[];
 };
-
-function indexBy<T>(items: T[], getKey: (item: T) => string): Map<string, T> {
-  const map = new Map<string, T>();
-  for (const item of items) {
-    map.set(getKey(item), item);
-  }
-  return map;
-}
 
 function compareEntries(a: OverrideDraft, b: OverrideDraft): number {
   const bySetcode = a.setcode_id.localeCompare(b.setcode_id);

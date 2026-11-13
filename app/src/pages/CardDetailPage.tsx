@@ -3,13 +3,14 @@ import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
 import { CardTile } from "../components/CardTile";
+import { setNumberCollator } from "../data/collators";
 import { getAvailableImages } from "../data/images";
 import type { AvailableImage } from "../data/images";
+import { indexBy } from "../data/indexBy";
 import { loadMasterData } from "../data/masterData";
 import { hasUnverifiedPrinting } from "../data/printings";
 import type { MasterData } from "../data/types";
 
-type SetRecord = MasterData["sets"][number];
 type SetCodeRecord = MasterData["setcodes"][number];
 
 // A setcode plus the set info we need to sort it.
@@ -47,8 +48,7 @@ function compareSetCodeRows(a: SetCodeRowData, b: SetCodeRowData): number {
   if (byTitle !== 0) {
     return byTitle;
   }
-  // numeric: true sorts "LB-9" before "LB-10".
-  return a.setcode.set_number.localeCompare(b.setcode.set_number, undefined, { numeric: true });
+  return setNumberCollator.compare(a.setcode.set_number, b.setcode.set_number);
 }
 
 // One large "hero" image, plus a row of small clickable images when there is more than one.
@@ -100,10 +100,7 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
     );
   }
 
-  const setsById = new Map<string, SetRecord>();
-  for (const set of data.sets) {
-    setsById.set(set.set_id, set);
-  }
+  const setsById = indexBy(data.sets, (set) => set.set_id);
 
   const rows: SetCodeRowData[] = [];
   for (const setcode of data.setcodes) {

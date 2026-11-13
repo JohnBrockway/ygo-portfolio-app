@@ -4,6 +4,8 @@ import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
 import { CardTile } from "../components/CardTile";
 import { SetMeta } from "../components/SetMeta";
+import { setNumberCollator } from "../data/collators";
+import { indexBy } from "../data/indexBy";
 import { loadMasterData } from "../data/masterData";
 import { hasUnverifiedPrinting } from "../data/printings";
 import type { Card, MasterData } from "../data/types";
@@ -27,17 +29,13 @@ function SetPrintings({ data, setId }: { data: MasterData; setId: string | undef
     );
   }
 
-  const cardsById = new Map<string, Card>();
-  for (const card of data.cards) {
-    cardsById.set(card.card_id, card);
-  }
+  const cardsById = indexBy(data.cards, (card) => card.card_id);
 
   // Synthetic set numbers are never shown, but still keep the tiles in a sensible order.
-  // numeric: true sorts "LOB-EN013" before "LOB-EN072" and "LB-9" before "LB-10".
   // A tile can't be shown without its card, so a setcode without one is dropped here.
   const setcodes = data.setcodes
     .filter((setcode) => setcode.set_id === set.set_id)
-    .sort((a, b) => a.set_number.localeCompare(b.set_number, undefined, { numeric: true }))
+    .sort((a, b) => setNumberCollator.compare(a.set_number, b.set_number))
     .flatMap((setcode): SetcodeWithCard[] => {
       const card = cardsById.get(setcode.card_id);
       return card === undefined ? [] : [{ setcode, card }];

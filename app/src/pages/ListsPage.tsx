@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { ReactNode, SubmitEvent } from "react";
+import { Icon } from "../components/Icon";
 import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { ListMeta } from "../components/ListMeta";
-import { createList, deleteList, getListEntries, renameList, useLiveLists } from "../data/lists";
+import { canChangeLists, createList, deleteList, getListEntries, renameList, useLiveLists } from "../data/lists";
 import type { EntryRecord, ListNameProblem, ListRecord, SaveResult } from "../data/listsDb";
 
 const BACK_LABEL = "lists";
@@ -11,25 +12,6 @@ const NAME_PROBLEM_TEXT: Record<ListNameProblem, string> = {
   empty: "Give the list a name.",
   duplicate: "A list with that name already exists.",
 };
-
-// The shared look of the small line icons on the row buttons. Decorative: the buttons carry the accessible name.
-function Icon({ children }: { children: ReactNode }) {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {children}
-    </svg>
-  );
-}
 
 function PencilIcon() {
   return (
@@ -51,7 +33,7 @@ function TrashIcon() {
   );
 }
 
-interface ListNameFormProps {
+type ListNameFormProps = {
   initialName: string;
   label: string;
   submitText: string;
@@ -59,7 +41,7 @@ interface ListNameFormProps {
   save: (name: string) => Promise<SaveResult>;
   onSaved?: () => void;
   onCancel?: () => void;
-}
+};
 
 // Shared by both renaming and creation functionality
 function ListNameForm({ initialName, label, submitText, disabled, save, onSaved, onCancel }: ListNameFormProps) {
@@ -78,8 +60,8 @@ function ListNameForm({ initialName, label, submitText, disabled, save, onSaved,
     // nameProblem is null if status isn't "invalid-name", so null just clears the fields that check for one.
     setNameProblem(result.nameProblem);
     if (result.status === "saved") {
-      // Back to how the form started: for a new list that empties the field, ready for the next one. (A form that is
-      // closed by onSaved goes away anyway, it's okay that it's wrong.)
+      // Back to how the form started: for a new list that empties the field, ready for the next one. A form that
+      // onSaved closes (renaming) is discarded anyway, so resetting it does no harm.
       setName(initialName);
       onSaved?.();
     }
@@ -214,30 +196,35 @@ function NewListForm({ disabled }: { disabled: boolean }) {
 
 export function ListsPage() {
   const listsState = useLiveLists();
-  const changesDisabled = listsState.status !== "ready";
+  const changesDisabled = !canChangeLists(listsState);
+
+  let content: ReactNode;
+  if (listsState.status === "loading") {
+    content = <p className="muted">Loading lists…</p>;
+  } else if (listsState.activeLists.length === 0) {
+    // Only possible after a failed load (the built-in lists always exist otherwise); the banner says why.
+    content = <p className="muted">No lists to show.</p>;
+  } else {
+    content = (
+      <ul className="row-list">
+        {listsState.activeLists.map((list) => (
+          <li key={list.id}>
+            <ListSummaryRow
+              list={list}
+              entries={getListEntries(listsState, list.id)}
+              changesDisabled={changesDisabled}
+            />
+          </li>
+        ))}
+      </ul>
+    );
+  }
 
   return (
     <>
       <h1>Lists</h1>
       <NewListForm disabled={changesDisabled} />
-      {listsState.status === "loading" ? (
-        <p className="muted">Loading lists…</p>
-      ) : listsState.activeLists.length === 0 ? (
-        // Only possible after a failed load (the built-in lists always exist otherwise); the banner says why.
-        <p className="muted">No lists to show.</p>
-      ) : (
-        <ul className="row-list">
-          {listsState.activeLists.map((list) => (
-            <li key={list.id}>
-              <ListSummaryRow
-                list={list}
-                entries={getListEntries(listsState, list.id)}
-                changesDisabled={changesDisabled}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      {content}
     </>
   );
 }

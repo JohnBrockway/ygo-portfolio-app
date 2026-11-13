@@ -1,8 +1,5 @@
+import { formatCount } from "../data/formatCount";
 import type { CardSet } from "../data/types";
-
-function formatPrintingCount(count: number): string {
-  return count === 1 ? "1 printing" : `${count} printings`;
-}
 
 export function SetMeta({ set }: { set: CardSet }) {
   const dateText = set.release_date ? set.release_date.text : "Date unknown";
@@ -11,7 +8,7 @@ export function SetMeta({ set }: { set: CardSet }) {
     <div className="row-meta">
       <span className="tag">{set.region.toUpperCase()}</span>
       <span>{dateText}</span>
-      <span>{formatPrintingCount(set.setcode_count)}</span>
+      <span>{formatCount(set.setcode_count, "printing", "printings")}</span>
     </div>
   );
 }

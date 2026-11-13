@@ -1,3 +1,5 @@
+import { setNumberCollator, titleCollator } from "./collators";
+import { indexBy } from "./indexBy";
 import type { EntryRecord } from "./listsDb";
 import type { Card, CardSet, MasterData, Printing, SetCode } from "./types";
 
@@ -16,14 +18,11 @@ export interface ListEntry {
   found: FoundPrinting | null;
 }
 
-const titleCollator = new Intl.Collator();
-const setNumberCollator = new Intl.Collator(undefined, { numeric: true });
-
 // Every printing in the master data by printing id, with its setcode, card and set. Built once per data load.
 // A setcode whose card or set is missing from the data is left out (and logged), so its printings show up as not found.
 export function buildFoundPrintingsById(data: MasterData): Map<string, FoundPrinting> {
-  const cardsById = new Map(data.cards.map((card): [string, Card] => [card.card_id, card]));
-  const setsById = new Map(data.sets.map((set): [string, CardSet] => [set.set_id, set]));
+  const cardsById = indexBy(data.cards, (card) => card.card_id);
+  const setsById = indexBy(data.sets, (set) => set.set_id);
 
   const foundPrintingsById = new Map<string, FoundPrinting>();
   for (const setcode of data.setcodes) {
