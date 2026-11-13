@@ -1,16 +1,54 @@
 import { useState } from "react";
-import type { SubmitEvent } from "react";
-import { createList, deleteList, renameList, useLiveLists } from "../data/lists";
-import { OWNED_LIST_ID } from "../data/listsDb";
+import type { ReactNode, SubmitEvent } from "react";
+import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
+import { ListMeta } from "../components/ListMeta";
+import { createList, deleteList, getListEntries, renameList, useLiveLists } from "../data/lists";
 import type { EntryRecord, ListNameProblem, ListRecord, SaveResult } from "../data/listsDb";
+
+const BACK_LABEL = "lists";
 
 const NAME_PROBLEM_TEXT: Record<ListNameProblem, string> = {
   empty: "Give the list a name.",
   duplicate: "A list with that name already exists.",
 };
 
-function formatCount(count: number, singular: string, plural: string): string {
-  return `${count} ${count === 1 ? singular : plural}`;
+// The shared look of the small line icons on the row buttons. Decorative: the buttons carry the accessible name.
+function Icon({ children }: { children: ReactNode }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <Icon>
+      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </Icon>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <Icon>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </Icon>
+  );
 }
 
 interface ListNameFormProps {
@@ -93,8 +131,6 @@ function ListSummaryRow({
   const [renaming, setRenaming] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const unDedupedCount = entries.reduce((total, entry) => total + entry.quantity, 0);
-
   async function handleDelete() {
     const confirmed = window.confirm(`Delete the list "${list.name}"? Will not affect card status on any other list.`);
     if (!confirmed) {
@@ -125,26 +161,41 @@ function ListSummaryRow({
   return (
     <div className="row">
       <div className="row-title">{list.name}</div>
-      <div className="row-meta">
-        <span>{formatCount(entries.length, "card", "cards")}</span>
-        {list.id === OWNED_LIST_ID ? <span>{"(" + unDedupedCount + " including duplicates)"}</span> : null}
-        {list.builtIn ? <span className="tag">Built-in</span> : null}
+      <ListMeta list={list} entries={entries} />
+      <div className="row-actions">
+        <LinkWithReturnInfo
+          to={`/lists/${list.id}`}
+          backLabel={BACK_LABEL}
+          className="action-button open-button"
+          title={`Open ${list.name}`}
+        >
+          Open
+        </LinkWithReturnInfo>
+        {list.builtIn ? null : (
+          <>
+            <button
+              className="action-button icon-button"
+              type="button"
+              aria-label={`Rename the list "${list.name}"`}
+              title="Rename"
+              disabled={changesDisabled}
+              onClick={() => setRenaming(true)}
+            >
+              <PencilIcon />
+            </button>
+            <button
+              className="action-button icon-button"
+              type="button"
+              aria-label={`Delete the list "${list.name}"`}
+              title="Delete"
+              disabled={changesDisabled || deleting}
+              onClick={handleDelete}
+            >
+              <TrashIcon />
+            </button>
+          </>
+        )}
       </div>
-      {list.builtIn ? null : (
-        <div className="row-actions">
-          <button className="action-button" type="button" disabled={changesDisabled} onClick={() => setRenaming(true)}>
-            Rename
-          </button>
-          <button
-            className="action-button"
-            type="button"
-            disabled={changesDisabled || deleting}
-            onClick={handleDelete}
-          >
-            Delete
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -180,7 +231,7 @@ export function ListsPage() {
             <li key={list.id}>
               <ListSummaryRow
                 list={list}
-                entries={listsState.byList.get(list.id) ?? []}
+                entries={getListEntries(listsState, list.id)}
                 changesDisabled={changesDisabled}
               />
             </li>

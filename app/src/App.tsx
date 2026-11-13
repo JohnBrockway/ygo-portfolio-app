@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { CardDetailPage } from "./pages/CardDetailPage";
 import { CardsPage } from "./pages/CardsPage";
+import { ListDetailPage } from "./pages/ListDetailPage";
 import { ListsPage } from "./pages/ListsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { PrintingPage } from "./pages/PrintingPage";
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/cards/:cardId" element={<CardDetailPage />} />
           <Route path="/printings/:setcodeId" element={<PrintingPage />} />
           <Route path="/lists" element={<ListsPage />} />
+          <Route path="/lists/:listId" element={<ListDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

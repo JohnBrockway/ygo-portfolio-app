@@ -180,6 +180,15 @@ export function getEntryQuantity(
   return entry === undefined ? 0 : entry.quantity;
 }
 
+// One shared empty array, so callers can use the result as a dependency of useMemo without
+// it looking changed on every render).
+const NO_ENTRIES: readonly EntryRecord[] = [];
+
+// Every entry on the list (none removed), in no particular order.
+export function getListEntries(listsState: ListsState, listId: string): readonly EntryRecord[] {
+  return listsState.byList.get(listId) ?? NO_ENTRIES;
+}
+
 function hasSameKey(entry: EntryRecord, other: EntryRecord): boolean {
   return entry.listId === other.listId && entry.printingId === other.printingId && entry.edition === other.edition;
 }
