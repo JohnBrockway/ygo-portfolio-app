@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { loadMasterData } from "../data/masterData";
 import { updateDrafts, useDrafts } from "../data/overrideDrafts";
 import { buildOverrides, dropRedundantDrafts, formatOverrideFile } from "../data/overrideExport";
-import type { MasterData } from "../data/types";
+import { useLoadOnMount } from "../data/useLoadOnMount";
 
 const EXPORT_FILE_NAME = "printing_overrides.json";
 
@@ -17,32 +17,15 @@ function downloadTextFile(fileName: string, text: string) {
 
 // Edit mode's export: writes the master data's overrides plus the drafts to a new printing_overrides.json.
 export function OverrideExport() {
-  const [data, setData] = useState<MasterData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { data, error } = useLoadOnMount(loadMasterData);
   const drafts = useDrafts();
 
   useEffect(() => {
-    // Ignore the result if the page was left before the fetch finished.
-    let cancelled = false;
-
-    loadMasterData()
-      .then((loadedData) => {
-        if (!cancelled) {
-          // Drafts the data already contains (i.e. after backend is rebuilt with an exported file) aren't needed any more.
-          updateDrafts((current) => dropRedundantDrafts(loadedData, current));
-          setData(loadedData);
-        }
-      })
-      .catch((err: Error) => {
-        if (!cancelled) {
-          setError(err.message);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (data !== null) {
+      // Drafts the data already contains (i.e. after backend is rebuilt with an exported file) aren't needed any more.
+      updateDrafts((current) => dropRedundantDrafts(data, current));
+    }
+  }, [data]);
 
   const build = useMemo(() => (data === null ? null : buildOverrides(data, drafts)), [data, drafts]);
 

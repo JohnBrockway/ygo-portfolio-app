@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { CardTile } from "../components/CardTile";
 import { GameToggles } from "../components/GameToggles";
@@ -13,6 +13,7 @@ import { getRegions, toggleRegion } from "../data/regions";
 import { matchesAllTokens, matchesSetNumberAndTitle, splitQuery } from "../data/search";
 import type { Card, MasterData } from "../data/types";
 import { useFilterParams } from "../data/useFilterParams";
+import { useLoadOnMount } from "../data/useLoadOnMount";
 
 type SetRecord = MasterData["sets"][number];
 type SetcodeRecord = MasterData["setcodes"][number];
@@ -275,29 +276,7 @@ function CardSearch({ data }: { data: MasterData }) {
 }
 
 export function CardsPage() {
-  const [data, setData] = useState<MasterData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Ignore the result if the page was left before the fetch finished.
-    let cancelled = false;
-
-    loadMasterData()
-      .then((loadedData) => {
-        if (!cancelled) {
-          setData(loadedData);
-        }
-      })
-      .catch((err: Error) => {
-        if (!cancelled) {
-          setError(err.message);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data, error } = useLoadOnMount(loadMasterData);
 
   let content: ReactNode;
   if (error !== null) {

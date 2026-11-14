@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
@@ -9,6 +9,7 @@ import { canChangeLists, getListEntries, useLiveLists } from "../data/lists";
 import type { EntryRecord, ListRecord } from "../data/listsDb";
 import { loadMasterData } from "../data/masterData";
 import type { MasterData } from "../data/types";
+import { useLoadOnMount } from "../data/useLoadOnMount";
 
 function ListContents({
   list,
@@ -46,29 +47,7 @@ function ListContents({
 export function ListDetailPage() {
   const { listId } = useParams();
   const listsState = useLiveLists();
-  const [data, setData] = useState<MasterData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Ignore the result if the page was left before the fetch finished.
-    let cancelled = false;
-
-    loadMasterData()
-      .then((loadedData) => {
-        if (!cancelled) {
-          setData(loadedData);
-        }
-      })
-      .catch((err: Error) => {
-        if (!cancelled) {
-          setError(err.message);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data, error } = useLoadOnMount(loadMasterData);
 
   const list = listsState.activeLists.find((candidate) => candidate.id === listId);
   const changesDisabled = !canChangeLists(listsState);

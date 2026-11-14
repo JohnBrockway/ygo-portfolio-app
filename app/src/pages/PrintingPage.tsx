@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
@@ -16,9 +16,10 @@ import type { PendingVersion } from "../data/printingRows";
 import { printingName } from "../data/printings";
 import type { DisplayPrinting } from "../data/printings";
 import type { Edition, MasterData } from "../data/types";
+import { useLoadOnMount } from "../data/useLoadOnMount";
 
 function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: string | undefined }) {
-    // Edit mode's changes that haven't been exported yet. They only show while edit mode is on.
+  // Edit mode's changes that haven't been exported yet. They only show while edit mode is on.
   const drafts = useDrafts();
   // Versions just added that are waiting for an artwork. Not saved anywhere, so leaving the page drops them.
   const [pendingVersions, setPendingVersions] = useState<PendingVersion[]>([]);
@@ -28,7 +29,7 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
     return (
       <>
         <h1>Printing not found</h1>
-        <p className="muted">No printing matching this code.</p>
+        <p className="muted">No printing matches this address.</p>
       </>
     );
   }
@@ -172,29 +173,7 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
 
 export function PrintingPage() {
   const { setcodeId } = useParams();
-  const [data, setData] = useState<MasterData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Ignore the result if the page was left before the fetch finished.
-    let cancelled = false;
-
-    loadMasterData()
-      .then((loadedData) => {
-        if (!cancelled) {
-          setData(loadedData);
-        }
-      })
-      .catch((err: Error) => {
-        if (!cancelled) {
-          setError(err.message);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data, error } = useLoadOnMount(loadMasterData);
 
   let content: ReactNode;
   if (error !== null) {

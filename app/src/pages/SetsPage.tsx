@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { GameToggles } from "../components/GameToggles";
 import { RegionToggles } from "../components/RegionToggles";
@@ -8,35 +8,13 @@ import { getSetGames, toggleGame } from "../data/games";
 import { loadSets } from "../data/masterData";
 import { getRegions, toggleRegion } from "../data/regions";
 import { matchesAllTokens, splitQuery } from "../data/search";
-import type { CardSet } from "../data/types";
 import { useFilterParams } from "../data/useFilterParams";
+import { useLoadOnMount } from "../data/useLoadOnMount";
 
 export function SetsPage() {
-  const [sets, setSets] = useState<CardSet[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { data: sets, error } = useLoadOnMount(loadSets);
   const { query, disabledGames, disabledRegions, setSearchQuery, setDisabledGames, setDisabledRegions } =
     useFilterParams();
-
-  useEffect(() => {
-    // Ignore the result if the page was left before the fetch finished.
-    let cancelled = false;
-
-    loadSets()
-      .then((loadedSets) => {
-        if (!cancelled) {
-          setSets(loadedSets);
-        }
-      })
-      .catch((err: Error) => {
-        if (!cancelled) {
-          setError(err.message);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const tokens = useMemo(() => splitQuery(query), [query]);
 
@@ -64,9 +42,9 @@ export function SetsPage() {
     content = <p className="muted">Loading sets…</p>;
   } else if (sets.length === 0) {
     content = <p className="muted">No sets found.</p>;
-  } else if (games.every((game) => disabledGames.has(game))) {
+  } else if (games.length > 0 && games.every((game) => disabledGames.has(game))) {
     content = <p className="muted">No games selected.</p>;
-  } else if (regions.every((region) => disabledRegions.has(region))) {
+  } else if (regions.length > 0 && regions.every((region) => disabledRegions.has(region))) {
     content = <p className="muted">No regions selected.</p>;
   } else if (visibleSets.length === 0) {
     content = <p className="muted">No sets match “{query.trim()}”.</p>;

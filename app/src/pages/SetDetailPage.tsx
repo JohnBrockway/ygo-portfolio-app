@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
@@ -9,6 +8,7 @@ import { indexBy } from "../data/indexBy";
 import { loadMasterData } from "../data/masterData";
 import { hasUnverifiedPrinting } from "../data/printings";
 import type { Card, MasterData } from "../data/types";
+import { useLoadOnMount } from "../data/useLoadOnMount";
 
 type SetcodeRecord = MasterData["setcodes"][number];
 
@@ -73,29 +73,7 @@ function SetPrintings({ data, setId }: { data: MasterData; setId: string | undef
 
 export function SetDetailPage() {
   const { setId } = useParams();
-  const [data, setData] = useState<MasterData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Ignore the result if the page was left before the fetch finished.
-    let cancelled = false;
-
-    loadMasterData()
-      .then((loadedData) => {
-        if (!cancelled) {
-          setData(loadedData);
-        }
-      })
-      .catch((err: Error) => {
-        if (!cancelled) {
-          setError(err.message);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data, error } = useLoadOnMount(loadMasterData);
 
   let content: ReactNode;
   if (error !== null) {
