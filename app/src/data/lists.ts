@@ -219,8 +219,8 @@ function applyList(list: ListRecord): void {
   setState(makeState(state.status, state.error, activeLists, activeEntries));
 }
 
-const NOT_SAVED: SaveResult = { status: "failed", list: null, nameProblem: null };
-const SAVED_WITHOUT_LIST: SaveResult = { status: "saved", list: null, nameProblem: null };
+const NOT_SAVED: SaveResult = { status: "failed", record: null, nameProblem: null };
+const SAVED_WITHOUT_LIST: SaveResult = { status: "saved", record: null, nameProblem: null };
 
 // Runs a change to the database through the queue. `change` makes the database call, applies what was saved to memory
 // and tells the other tabs; this adds what every change needs around that:
@@ -269,8 +269,8 @@ export function changeEntryQuantity(
 export function createList(name: string): Promise<SaveResult> {
   return enqueueChange("Couldn't create list", async () => {
     const result = await createListInDatabase(name);
-    if (result.status === "saved" && result.list !== null) {
-      applyList(result.list);
+    if (result.status === "saved" && result.record !== null) {
+      applyList(result.record);
       notifyOtherTabs();
     }
     return result;
@@ -282,8 +282,8 @@ export function createList(name: string): Promise<SaveResult> {
 export function renameList(listId: string, name: string): Promise<SaveResult> {
   return enqueueChange("Couldn't rename list", async () => {
     const result = await renameListInDatabase(listId, name);
-    if (result.status === "saved" && result.list !== null) {
-      applyList(result.list);
+    if (result.status === "saved" && result.record !== null) {
+      applyList(result.record);
       notifyOtherTabs();
     }
     return result;

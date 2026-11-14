@@ -5,6 +5,12 @@ export function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
+// Writes every record to the store (replacing any record with the same key), all at once. Call it inside a transaction
+// that includes the store.
+export async function putAll(store: IDBObjectStore, records: readonly unknown[]): Promise<void> {
+  await Promise.all(records.map((record) => requestToPromise(store.put(record))));
+}
+
 function transactionDone(tx: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
@@ -56,6 +62,13 @@ export class IndexedDbConnection {
     }
   }
 
+  // Empties the given object stores, all in one transaction.
+  async clearStores(storeNames: string[]): Promise<void> {
+    await this.runTransaction(storeNames, "readwrite", async (tx) => {
+      await Promise.all(storeNames.map((storeName) => requestToPromise(tx.objectStore(storeName).clear())));
+    });
+  }
+
   close(): void {
     this.db.close();
   }
@@ -73,4 +86,43 @@ export async function isStoragePersisted(): Promise<boolean> {
     return false;
   }
   return navigator.storage.persisted();
+}
+
+// Gives a function that returns the one shared connection to a database, opened on first use, so every database has the
+// same opening steps:
+// 1. open it (running `upgrade` if it is new or its version was raised),
+// 2. run `prepare` if there is one (e.g. adding rows every device needs); if that fails the connection is closed again,
+// 3. ask the browser to keep the app's storage (see requestPersistentStorage).
+// A failed open is not cached, so the next call retries.
+export function createConnectionGetter(
+  name: string,
+  version: number,
+  upgrade: (db: IDBDatabase, oldVersion: number) => void,
+  prepare?: (connection: IndexedDbConnection) => Promise<void>,
+): () => Promise<IndexedDbConnection> {
+  let connectionPromise: Promise<IndexedDbConnection> | null = null;
+
+  async function openConnection(): Promise<IndexedDbConnection> {
+    const connection = await IndexedDbConnection.open(name, version, upgrade);
+    if (prepare !== undefined) {
+      try {
+        await prepare(connection);
+      } catch (error) {
+        connection.close();
+        throw error;
+      }
+    }
+    void requestPersistentStorage();
+    return connection;
+  }
+
+  return () => {
+    if (connectionPromise === null) {
+      connectionPromise = openConnection().catch((error) => {
+        connectionPromise = null;
+        throw error;
+      });
+    }
+    return connectionPromise;
+  };
 }
