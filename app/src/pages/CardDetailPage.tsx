@@ -2,21 +2,18 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
-import { CardTile } from "../components/CardTile";
+import { SetCodeTile } from "../components/SetCodeTile";
 import { setNumberCollator } from "../data/collators";
 import { getAvailableImages } from "../data/images";
 import type { AvailableImage } from "../data/images";
 import { indexBy } from "../data/indexBy";
 import { loadMasterData } from "../data/masterData";
-import { hasUnverifiedPrinting } from "../data/printings";
-import type { MasterData } from "../data/types";
+import type { MasterData, SetCode } from "../data/types";
 import { useLoadOnMount } from "../data/useLoadOnMount";
 
-type SetCodeRecord = MasterData["setcodes"][number];
-
 // A setcode plus the set info we need to sort it.
-type SetCodeRowData = {
-  setcode: SetCodeRecord;
+type SetCodeWithSetInfo = {
+  setcode: SetCode;
   releaseDate: string | null;
   region: string;
   setTitle: string;
@@ -36,7 +33,7 @@ function compareReleaseDates(a: string | null, b: string | null): number {
   return a.localeCompare(b);
 }
 
-function compareSetCodeRows(a: SetCodeRowData, b: SetCodeRowData): number {
+function compareSetCodesWithSetInfo(a: SetCodeWithSetInfo, b: SetCodeWithSetInfo): number {
   const byDate = compareReleaseDates(a.releaseDate, b.releaseDate);
   if (byDate !== 0) {
     return byDate;
@@ -103,40 +100,33 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
 
   const setsById = indexBy(data.sets, (set) => set.set_id);
 
-  const rows: SetCodeRowData[] = [];
-  for (const setcode of data.setcodes) {
-    if (setcode.card_id !== card.card_id) {
-      continue;
-    }
-    const set = setsById.get(setcode.set_id);
-    let releaseDate: string | null = null;
-    if (set !== undefined && set.release_date) {
-      releaseDate = set.release_date.iso;
-    }
-    rows.push({
-      setcode,
-      releaseDate,
-      region: set === undefined ? "" : set.region,
-      setTitle: set === undefined ? setcode.set_id : set.title,
-    });
-  }
-  rows.sort(compareSetCodeRows);
+  // Either record can be missing in the data; fall back to ids instead of breaking the page.
+  const setcodes = data.setcodes
+    .filter((setcode) => setcode.card_id === card.card_id)
+    .map((setcode): SetCodeWithSetInfo => {
+      const set = setsById.get(setcode.set_id);
+      let releaseDate: string | null = null;
+      if (set !== undefined && set.release_date) {
+        releaseDate = set.release_date.iso;
+      }
+      return {
+        setcode,
+        releaseDate,
+        region: set === undefined ? "" : set.region,
+        setTitle: set === undefined ? setcode.set_id : set.title,
+      };
+    })
+    .sort(compareSetCodesWithSetInfo);
 
   let list: ReactNode;
-  if (rows.length === 0) {
+  if (setcodes.length === 0) {
     list = <p className="muted">No printings for this card.</p>;
   } else {
     list = (
       <ul className="tile-grid tile-grid-cards">
-        {rows.map((row) => (
-          <li key={row.setcode.setcode_id}>
-            <CardTile
-              card={card}
-              setcode={row.setcode}
-              printingCount={row.setcode.printings.length}
-              hasUnverifiedPrinting={hasUnverifiedPrinting(row.setcode.printings)}
-              backLabel={card.title}
-            />
+        {setcodes.map(({ setcode }) => (
+          <li key={setcode.setcode_id}>
+            <SetCodeTile card={card} setcode={setcode} backLabel={card.title} />
           </li>
         ))}
       </ul>
@@ -146,11 +136,7 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
   return (
     <>
       <h1>{card.title}</h1>
-      {
-        /* key makes this unique across different cards, otherwise React would reuse the component
-          and thus the wrong images and index if navigating directly between card pages. */
-      }
-      <CardImages key={card.card_id} title={card.title} images={getAvailableImages(card)} />
+      <CardImages title={card.title} images={getAvailableImages(card)} />
       {list}
     </>
   );
@@ -166,7 +152,9 @@ export function CardDetailPage() {
   } else if (data === null) {
     content = <p className="muted">Loading printings…</p>;
   } else {
-    content = <CardPrintings data={data} cardId={cardId} />;
+    // key makes this unique per card page, otherwise React would reuse the component (and the selected image index)
+    // if navigating directly between card pages.
+    content = <CardPrintings key={cardId} data={data} cardId={cardId} />;
   }
 
   return (

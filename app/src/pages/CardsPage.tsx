@@ -4,6 +4,7 @@ import { CardTile } from "../components/CardTile";
 import { GameToggles } from "../components/GameToggles";
 import { RegionToggles } from "../components/RegionToggles";
 import { SearchBar } from "../components/SearchBar";
+import { SetCodeTile } from "../components/SetCodeTile";
 import { setNumberCollator, titleCollator } from "../data/collators";
 import { getGames, toggleGame } from "../data/games";
 import { indexBy } from "../data/indexBy";
@@ -11,16 +12,13 @@ import { loadMasterData } from "../data/masterData";
 import { getCardIdsWithUnverifiedPrintings, hasUnverifiedPrinting } from "../data/printings";
 import { getRegions, toggleRegion } from "../data/regions";
 import { matchesAllTokens, matchesSetNumberAndTitle, splitQuery } from "../data/search";
-import type { Card, MasterData } from "../data/types";
+import type { Card, CardSet, MasterData, SetCode } from "../data/types";
 import { useFilterParams } from "../data/useFilterParams";
 import { useLoadOnMount } from "../data/useLoadOnMount";
 
-type SetRecord = MasterData["sets"][number];
-type SetcodeRecord = MasterData["setcodes"][number];
-
 // A setcode prepared for searching, with the card it belongs to (needed to show its tile).
-type SearchableSetcode = {
-  setcode: SetcodeRecord;
+type SearchableSetCode = {
+  setcode: SetCode;
   card: Card;
   numberText: string;
   titleText: string;
@@ -56,9 +54,9 @@ function findCardMatches(sortedCards: Card[], tokens: string[]): Card[] {
 // Everything the setcode search needs, built once per data load. Synthetic set numbers
 // aren't searchable.
 function buildSearchableSetcodes(
-  setcodes: SetcodeRecord[],
-  cardsById: Map<string, Card>
-): SearchableSetcode[] {
+  setcodes: SetCode[],
+  cardsById: Map<string, Card>,
+): SearchableSetCode[] {
   // Build a map so we don't need to re-lowercase every printing after seeing a card once
   const lowerTitlesByCardId = new Map<string, string>();
 
@@ -66,7 +64,7 @@ function buildSearchableSetcodes(
     .filter((setcode) => !setcode.set_number_synthetic)
     .sort((a, b) => setNumberCollator.compare(a.set_number, b.set_number));
 
-  return sortedSetcodes.flatMap((setcode): SearchableSetcode[] => {
+  return sortedSetcodes.flatMap((setcode): SearchableSetCode[] => {
     const card = cardsById.get(setcode.card_id);
     if (card === undefined) {
       return [];
@@ -81,8 +79,8 @@ function buildSearchableSetcodes(
 }
 
 // Callers pass a non-empty token list and entries already sorted by set number.
-function findSetcodeMatches(sortedEntries: SearchableSetcode[], tokens: string[]): SearchableSetcode[] {
-  const matches: SearchableSetcode[] = [];
+function findSetcodeMatches(sortedEntries: SearchableSetCode[], tokens: string[]): SearchableSetCode[] {
+  const matches: SearchableSetCode[] = [];
   for (const entry of sortedEntries) {
     if (matchesSetNumberAndTitle(entry.numberText, entry.titleText, tokens)) {
       matches.push(entry);
@@ -91,10 +89,10 @@ function findSetcodeMatches(sortedEntries: SearchableSetcode[], tokens: string[]
   return matches;
 }
 
-// The full list of regions any visible result has printings in. Built once per data load.
+// The regions each card has printings in, across all its setcodes. Built once per data load.
 function buildRegionsByCardId(
-  setcodes: SetcodeRecord[],
-  setsById: Map<string, SetRecord>
+  setcodes: SetCode[],
+  setsById: Map<string, CardSet>,
 ): Map<string, Set<string>> {
   const map = new Map<string, Set<string>>();
   for (const setcode of setcodes) {
@@ -113,7 +111,7 @@ function buildRegionsByCardId(
 }
 
 // How many printings (rarities and so on) each card has across all its setcodes. Built once per data load.
-function buildPrintingCountsByCardId(setcodes: SetcodeRecord[]): Map<string, number> {
+function buildPrintingCountsByCardId(setcodes: SetCode[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const setcode of setcodes) {
     const count = map.get(setcode.card_id) ?? 0;
@@ -134,12 +132,10 @@ function hasEnabledRegion(cardRegions: Set<string> | undefined, disabledRegions:
   return false;
 }
 
-function ResultSection({ title, total, children }: { title: string; total: number; children: ReactNode }) {
+function ResultsSection({ total, children }: { total: number; children: ReactNode }) {
   return (
     <section>
-      <h2>
-        {title} ({total})
-      </h2>
+      <h2>Results ({total})</h2>
       {total > MAX_RESULTS ? (
         <p className="muted">Showing the first {MAX_RESULTS}. Type more to narrow the results.</p>
       ) : null}
@@ -224,7 +220,7 @@ function CardSearch({ data }: { data: MasterData }) {
     const shownCards = cardMatches.slice(0, MAX_RESULTS);
     const shownSetcodes = setcodeMatches.slice(0, MAX_RESULTS - shownCards.length);
     results = (
-      <ResultSection title="Results" total={cardMatches.length + setcodeMatches.length}>
+      <ResultsSection total={cardMatches.length + setcodeMatches.length}>
         <ul className="tile-grid tile-grid-cards">
           {shownCards.map((card) => (
             <li key={`card-${card.card_id}`}>
@@ -238,17 +234,11 @@ function CardSearch({ data }: { data: MasterData }) {
           ))}
           {shownSetcodes.map(({ setcode, card }) => (
             <li key={`setcode-${setcode.setcode_id}`}>
-              <CardTile
-                card={card}
-                setcode={setcode}
-                printingCount={setcode.printings.length}
-                hasUnverifiedPrinting={hasUnverifiedPrinting(setcode.printings)}
-                backLabel={BACK_LABEL}
-              />
+              <SetCodeTile card={card} setcode={setcode} backLabel={BACK_LABEL} />
             </li>
           ))}
         </ul>
-      </ResultSection>
+      </ResultsSection>
     );
   }
 

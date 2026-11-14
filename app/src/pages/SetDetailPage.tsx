@@ -1,20 +1,17 @@
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
-import { CardTile } from "../components/CardTile";
+import { SetCodeTile } from "../components/SetCodeTile";
 import { SetMeta } from "../components/SetMeta";
 import { setNumberCollator } from "../data/collators";
 import { indexBy } from "../data/indexBy";
 import { loadMasterData } from "../data/masterData";
-import { hasUnverifiedPrinting } from "../data/printings";
-import type { Card, MasterData } from "../data/types";
+import type { Card, MasterData, SetCode } from "../data/types";
 import { useLoadOnMount } from "../data/useLoadOnMount";
 
-type SetcodeRecord = MasterData["setcodes"][number];
-
 // A setcode of this set with the card it belongs to (needed to show its tile).
-type SetcodeWithCard = {
-  setcode: SetcodeRecord;
+type SetCodeWithCard = {
+  setcode: SetCode;
   card: Card;
 };
 
@@ -36,7 +33,7 @@ function SetPrintings({ data, setId }: { data: MasterData; setId: string | undef
   const setcodes = data.setcodes
     .filter((setcode) => setcode.set_id === set.set_id)
     .sort((a, b) => setNumberCollator.compare(a.set_number, b.set_number))
-    .flatMap((setcode): SetcodeWithCard[] => {
+    .flatMap((setcode): SetCodeWithCard[] => {
       const card = cardsById.get(setcode.card_id);
       return card === undefined ? [] : [{ setcode, card }];
     });
@@ -49,13 +46,7 @@ function SetPrintings({ data, setId }: { data: MasterData; setId: string | undef
       <ul className="tile-grid tile-grid-cards">
         {setcodes.map(({ setcode, card }) => (
           <li key={setcode.setcode_id}>
-            <CardTile
-              card={card}
-              setcode={setcode}
-              printingCount={setcode.printings.length}
-              hasUnverifiedPrinting={hasUnverifiedPrinting(setcode.printings)}
-              backLabel={set.title}
-            />
+            <SetCodeTile card={card} setcode={setcode} backLabel={set.title} />
           </li>
         ))}
       </ul>
