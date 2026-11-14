@@ -743,6 +743,82 @@ a {
   color: var(--heart);
 }
 
+/* The wishlist heart and the "more lists" button side by side: the heart takes the width the trigger leaves. */
+.list-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.list-buttons > .list-button {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+.list-buttons > .list-menu-trigger {
+  flex: 0 0 1.75rem;
+}
+
+.list-menu-trigger-on {
+  color: var(--accent);
+}
+
+/* List picker: a modal, so it isn't clipped or positioned by the narrow edition cell it was opened from. The dialog
+   has no padding of its own so that a click on the backdrop is the only click that lands on the dialog element. */
+.list-dialog {
+  width: min(20rem, calc(100% - 2rem));
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text);
+}
+
+.list-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.list-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.list-dialog-title {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.list-choices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.5rem;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.list-choice input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.list-dialog-hint {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
 .error-banner {
   display: flex;
   flex-wrap: wrap;

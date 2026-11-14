@@ -12,7 +12,7 @@ function HeartIcon({ filled }: { filled: boolean }) {
 }
 
 // One-click wishlist toggle for this printing's edition. The heart changes once the change has been saved.
-// Takes the same props as the future AddToListMenu, which will replace it in EditionCells.
+// Sits next to AddToListMenu in EditionCells and takes the same props.
 export function WishlistButton({
   printingId,
   edition,
