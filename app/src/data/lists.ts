@@ -7,7 +7,7 @@ import {
   loadListsFromDatabase,
   renameListInDatabase,
 } from "./listsDb";
-import type { EntryRecord, ListRecord, SaveResult } from "./listsDb";
+import type { ListEntryRecord, ListRecord, SaveResult } from "./listsDb";
 import type { Edition } from "./types";
 
 export interface ListsState {
@@ -20,17 +20,17 @@ export interface ListsState {
   activeLists: readonly ListRecord[];
   // Only the entries that are on a list (quantity above 0). Removed entries stay in the database until they have
   // been synced, but are left out here.
-  activeEntries: readonly EntryRecord[];
+  activeEntries: readonly ListEntryRecord[];
   // The active entries, grouped for lookups.
-  byPrinting: ReadonlyMap<string, readonly EntryRecord[]>;
-  byList: ReadonlyMap<string, readonly EntryRecord[]>;
+  byPrinting: ReadonlyMap<string, readonly ListEntryRecord[]>;
+  byList: ReadonlyMap<string, readonly ListEntryRecord[]>;
 }
 
 function groupBy(
-  entries: readonly EntryRecord[],
-  getKey: (entry: EntryRecord) => string,
-): Map<string, EntryRecord[]> {
-  const groups = new Map<string, EntryRecord[]>();
+  entries: readonly ListEntryRecord[],
+  getKey: (entry: ListEntryRecord) => string,
+): Map<string, ListEntryRecord[]> {
+  const groups = new Map<string, ListEntryRecord[]>();
   for (const entry of entries) {
     const key = getKey(entry);
     const group = groups.get(key);
@@ -47,7 +47,7 @@ function makeState(
   status: ListsState["status"],
   error: string | null,
   activeLists: readonly ListRecord[],
-  activeEntries: readonly EntryRecord[],
+  activeEntries: readonly ListEntryRecord[],
 ): ListsState {
   return {
     status,
@@ -188,20 +188,20 @@ export function getEntryQuantity(
 
 // One shared empty array, so callers can use the result as a dependency of useMemo without
 // it looking changed on every render.
-const NO_ENTRIES: readonly EntryRecord[] = [];
+const NO_ENTRIES: readonly ListEntryRecord[] = [];
 
 // Every entry on the list (none removed), in no particular order.
-export function getListEntries(listsState: ListsState, listId: string): readonly EntryRecord[] {
+export function getListEntries(listsState: ListsState, listId: string): readonly ListEntryRecord[] {
   return listsState.byList.get(listId) ?? NO_ENTRIES;
 }
 
-function hasSameKey(entry: EntryRecord, other: EntryRecord): boolean {
+function hasSameKey(entry: ListEntryRecord, other: ListEntryRecord): boolean {
   return entry.listId === other.listId && entry.printingId === other.printingId && entry.edition === other.edition;
 }
 
 // Puts a committed entry into memory, in place of memory's copy of the same entry if it has one. The committed entry
 // is what the database holds now so it replaces memory's copy. Nothing is written to the database here.
-function applyEntry(entry: EntryRecord): void {
+function applyEntry(entry: ListEntryRecord): void {
   const otherEntries = state.activeEntries.filter((other) => !hasSameKey(entry, other));
   const activeEntries = entry.quantity > 0 ? [...otherEntries, entry] : otherEntries;
   setState(makeState(state.status, state.error, state.activeLists, activeEntries));

@@ -4,7 +4,7 @@ import { Icon } from "../components/Icon";
 import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { ListMeta } from "../components/ListMeta";
 import { canChangeLists, createList, deleteList, getListEntries, renameList, useLiveLists } from "../data/lists";
-import type { EntryRecord, ListNameProblem, ListRecord, SaveResult } from "../data/listsDb";
+import type { ListEntryRecord, ListNameProblem, ListRecord, SaveResult } from "../data/listsDb";
 
 const BACK_LABEL = "lists";
 
@@ -107,7 +107,7 @@ function ListSummaryRow({
   changesDisabled,
 }: {
   list: ListRecord;
-  entries: readonly EntryRecord[];
+  entries: readonly ListEntryRecord[];
   changesDisabled: boolean;
 }) {
   const [renaming, setRenaming] = useState(false);

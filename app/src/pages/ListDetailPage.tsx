@@ -6,7 +6,7 @@ import { ListEntryTile } from "../components/ListEntryTile";
 import { ListMeta } from "../components/ListMeta";
 import { buildFoundPrintingsById, joinEntriesWithMasterData } from "../data/listEntries";
 import { canChangeLists, getListEntries, useLiveLists } from "../data/lists";
-import type { EntryRecord, ListRecord } from "../data/listsDb";
+import type { ListEntryRecord, ListRecord } from "../data/listsDb";
 import { loadMasterData } from "../data/masterData";
 import type { MasterData } from "../data/types";
 import { useLoadOnMount } from "../data/useLoadOnMount";
@@ -18,7 +18,7 @@ function ListContents({
   changesDisabled,
 }: {
   list: ListRecord;
-  entries: readonly EntryRecord[];
+  entries: readonly ListEntryRecord[];
   data: MasterData;
   changesDisabled: boolean;
 }) {

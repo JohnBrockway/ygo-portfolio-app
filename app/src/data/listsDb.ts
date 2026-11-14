@@ -44,7 +44,7 @@ export interface ListRecord {
   dirty: number;
 }
 
-export interface EntryRecord {
+export interface ListEntryRecord {
   listId: string;
   printingId: string;
   edition: Edition;
@@ -59,7 +59,7 @@ export interface EntryRecord {
 // until deletion has been synced to permanent storage.
 export interface ListsData {
   lists: ListRecord[];
-  entries: EntryRecord[];
+  entries: ListEntryRecord[];
 }
 
 export type ListNameProblem = NameProblem;
@@ -112,7 +112,7 @@ export async function loadListsFromDatabase(): Promise<ListsData> {
     const lists: ListRecord[] = await requestToPromise(tx.objectStore(LISTS_STORE).getAll());
     lists.sort(compareByOrder);
 
-    const entries: EntryRecord[] = await requestToPromise(tx.objectStore(ENTRIES_STORE).getAll());
+    const entries: ListEntryRecord[] = await requestToPromise(tx.objectStore(ENTRIES_STORE).getAll());
 
     return { lists, entries };
   });
@@ -134,7 +134,7 @@ async function getMutableListOrThrow(listStore: IDBObjectStore, listId: string):
 }
 
 // Every entry of the list, removed ones included.
-function getEntriesOfList(entryStore: IDBObjectStore, listId: string): Promise<EntryRecord[]> {
+function getEntriesOfList(entryStore: IDBObjectStore, listId: string): Promise<ListEntryRecord[]> {
   // Entry keys are arrays: [listId, printingId, edition]. IndexedDB sorts keys by comparing them element by element
   // (an array that is a prefix of another sorts first), and any array sorts after any string. So:
   // - [listId] is below every key of this list (same first element, but shorter), and
@@ -161,13 +161,13 @@ export async function changeEntryQuantityInDatabase(
   printingId: string,
   edition: Edition,
   change: (current: number) => number,
-): Promise<EntryRecord | null> {
+): Promise<ListEntryRecord | null> {
   const connection = await getListsConnection();
   return connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readwrite", async (tx) => {
     await getLiveListOrThrow(tx.objectStore(LISTS_STORE), listId);
 
     const store = tx.objectStore(ENTRIES_STORE);
-    const existing: EntryRecord | undefined = await requestToPromise(store.get([listId, printingId, edition]));
+    const existing: ListEntryRecord | undefined = await requestToPromise(store.get([listId, printingId, edition]));
     const current = existing === undefined ? 0 : existing.quantity;
 
     const wanted = change(current);
@@ -180,7 +180,7 @@ export async function changeEntryQuantityInDatabase(
       return null;
     }
 
-    const entry: EntryRecord = { listId, printingId, edition, quantity, updatedAt: Date.now(), dirty: 1 };
+    const entry: ListEntryRecord = { listId, printingId, edition, quantity, updatedAt: Date.now(), dirty: 1 };
     await requestToPromise(store.put(entry));
     return entry;
   });

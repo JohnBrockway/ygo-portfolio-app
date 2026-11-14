@@ -1,6 +1,6 @@
 import { setNumberCollator, titleCollator } from "./collators";
 import { indexBy } from "./indexBy";
-import type { EntryRecord } from "./listsDb";
+import type { ListEntryRecord } from "./listsDb";
 import type { Card, CardSet, MasterData, Printing, SetCode } from "./types";
 
 // A printing from the master data, together with the records it belongs to.
@@ -14,7 +14,7 @@ export interface FoundPrinting {
 // A list entry as the list page shows it. `found` is null when the master data has no such printing (for example
 // after the data was rebuilt without it), so the entry can still be shown, and removed.
 export interface ListEntry {
-  entry: EntryRecord;
+  entry: ListEntryRecord;
   found: FoundPrinting | null;
 }
 
@@ -41,7 +41,7 @@ export function buildFoundPrintingsById(data: MasterData): Map<string, FoundPrin
   return foundPrintingsById;
 }
 
-function compareEntryKeys(a: EntryRecord, b: EntryRecord): number {
+function compareEntryKeys(a: ListEntryRecord, b: ListEntryRecord): number {
   return titleCollator.compare(a.printingId, b.printingId) || titleCollator.compare(a.edition, b.edition);
 }
 
@@ -65,7 +65,7 @@ function compareRows(a: ListEntry, b: ListEntry): number {
 
 // Joins list entries to the master data (by printing id) and sorts them for showing. Returns a new array.
 export function joinEntriesWithMasterData(
-  entries: readonly EntryRecord[],
+  entries: readonly ListEntryRecord[],
   foundPrintingsById: ReadonlyMap<string, FoundPrinting>,
 ): ListEntry[] {
   return entries
