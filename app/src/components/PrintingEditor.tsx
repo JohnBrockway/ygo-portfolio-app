@@ -1,24 +1,21 @@
 import { getAvailableImages } from "../data/images";
 import { makeDraft } from "../data/overrideDrafts";
 import type { OverrideDraft } from "../data/overrideDrafts";
-import type { DraftKind } from "../data/printingRows";
-import type { DisplayPrinting } from "../data/printings";
 import type { Card } from "../data/types";
+import type { WorkingPrinting } from "../data/workingPrintings";
 
 // Edit mode's version of PrintingArt: image picker & label text field.
-// printing is the printing as shown (draft already applied if it has one); draftKind describes what level of draft it is.
-// onDraftChange gets the new draft, or null to discard the printing's draft (which removes an added version).
+// printing is the printing as shown (draft already applied if it has one); its draft_kind describes what level of draft it is.
+// onDraftChange gets the new draft, or null to discard the printing's draft (which removes an added printing).
 export function PrintingEditor({
   card,
   setcodeId,
   printing,
-  draftKind,
   onDraftChange,
 }: {
   card: Card;
   setcodeId: string;
-  printing: DisplayPrinting;
-  draftKind: DraftKind;
+  printing: WorkingPrinting;
   onDraftChange: (draft: OverrideDraft | null) => void;
 }) {
   const images = getAvailableImages(card);
@@ -41,9 +38,9 @@ export function PrintingEditor({
   }
 
   let discardLabel = "Discard draft";
-  if (draftKind === "added") {
+  if (printing.draft_kind === "added") {
     discardLabel = "Remove version";
-  } else if (draftKind === "pending") {
+  } else if (printing.draft_kind === "pending") {
     discardLabel = "Cancel";
   }
 
@@ -63,7 +60,7 @@ export function PrintingEditor({
           </button>
         ))}
       </div>
-      {draftKind === "pending" ? <p className="muted">Pick an artwork to keep this version.</p> : null}
+      {printing.draft_kind === "pending" ? <p className="muted">Pick an artwork to keep this version.</p> : null}
       {printing.artwork === null ? null : (
         <label className="muted">
           <input
@@ -75,7 +72,7 @@ export function PrintingEditor({
           />
         </label>
       )}
-      {draftKind === "none" ? null : (
+      {printing.draft_kind === "none" ? null : (
         <p>
           <button type="button" className="action-button" onClick={() => onDraftChange(null)}>
             {discardLabel}
