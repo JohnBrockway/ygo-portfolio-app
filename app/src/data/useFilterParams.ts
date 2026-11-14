@@ -50,3 +50,6 @@ export function useFilterParams() {
     setDisabledRegions: (regions: Iterable<string>) => setParamValues(HIDDEN_REGION_PARAM, regions),
   };
 }
+
+// Everything useFilterParams returns, for components that are handed it.
+export type FilterParams = ReturnType<typeof useFilterParams>;

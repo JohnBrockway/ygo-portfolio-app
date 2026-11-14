@@ -26,17 +26,6 @@ export function getSetGames(sets: CardSet[]): Game[] {
   return Array.from(games).sort();
 }
 
-// Returns a new set (React state must not be mutated in place).
-export function toggleGame(disabledGames: Set<Game>, game: Game): Set<Game> {
-  const next = new Set(disabledGames);
-  if (next.has(game)) {
-    next.delete(game);
-  } else {
-    next.add(game);
-  }
-  return next;
-}
-
 // True if a string from outside the app (e.g. the address bar) names a known game.
 export function isGame(value: string): value is Game {
   return value in GAME_LABELS;

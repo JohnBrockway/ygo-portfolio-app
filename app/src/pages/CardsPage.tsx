@@ -1,16 +1,14 @@
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { CardTile } from "../components/CardTile";
-import { GameToggles } from "../components/GameToggles";
-import { RegionToggles } from "../components/RegionToggles";
-import { SearchBar } from "../components/SearchBar";
+import { FilterBar } from "../components/FilterBar";
 import { SetCodeTile } from "../components/SetCodeTile";
 import { setNumberCollator, titleCollator } from "../data/collators";
-import { getGames, toggleGame } from "../data/games";
+import { getGames } from "../data/games";
 import { indexBy } from "../data/indexBy";
 import { loadMasterData } from "../data/masterData";
-import { getCardIdsWithUnverifiedPrintings, hasUnverifiedPrinting } from "../data/printings";
-import { getRegions, toggleRegion } from "../data/regions";
+import { getCardIdsWithUnverifiedPrintings } from "../data/printings";
+import { getRegions } from "../data/regions";
 import { matchesAllTokens, matchesSetNumberAndTitle, splitQuery } from "../data/search";
 import type { Card, CardSet, MasterData, SetCode } from "../data/types";
 import { useFilterParams } from "../data/useFilterParams";
@@ -145,8 +143,8 @@ function ResultsSection({ total, children }: { total: number; children: ReactNod
 }
 
 function CardSearch({ data }: { data: MasterData }) {
-  const { query, disabledGames, disabledRegions, setSearchQuery, setDisabledGames, setDisabledRegions } =
-    useFilterParams();
+  const filters = useFilterParams();
+  const { query, disabledGames, disabledRegions } = filters;
   const tokens = useMemo(() => splitQuery(query), [query]);
 
   const cardsById = useMemo(() => indexBy(data.cards, (card) => card.card_id), [data]);
@@ -244,22 +242,7 @@ function CardSearch({ data }: { data: MasterData }) {
 
   return (
     <>
-      <SearchBar
-        value={query}
-        onChange={setSearchQuery}
-        placeholder="Search by card name or set number"
-        label="Search by card name or set number"
-      />
-      <GameToggles
-        games={games}
-        disabledGames={disabledGames}
-        onToggle={(game) => setDisabledGames(toggleGame(disabledGames, game))}
-      />
-      <RegionToggles
-        regions={regions}
-        disabledRegions={disabledRegions}
-        onToggle={(region) => setDisabledRegions(toggleRegion(disabledRegions, region))}
-      />
+      <FilterBar filters={filters} searchLabel="Search by card name or set number" games={games} regions={regions} />
       {results}
     </>
   );

@@ -8,14 +8,3 @@ export function getRegions(sets: CardSet[]): string[] {
   }
   return Array.from(regions).sort();
 }
-
-// Returns a new set (React state must not be mutated in place).
-export function toggleRegion(disabledRegions: Set<string>, region: string): Set<string> {
-  const next = new Set(disabledRegions);
-  if (next.has(region)) {
-    next.delete(region);
-  } else {
-    next.add(region);
-  }
-  return next;
-}
