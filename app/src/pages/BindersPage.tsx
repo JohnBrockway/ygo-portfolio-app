@@ -45,7 +45,6 @@ function BinderSummaryRow({
       noun="binder"
       name={binder.name}
       meta={<BinderMeta binder={binder} cards={cards} />}
-      // There is no binder page yet, so for now this lands on the not-found page.
       openTo={`/binders/${binder.id}`}
       backLabel={BACK_LABEL}
       editable={true}

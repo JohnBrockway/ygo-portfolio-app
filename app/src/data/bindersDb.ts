@@ -41,8 +41,8 @@ export interface BinderRecord {
   order: number;
   columns: number;
   rows: number;
-  // The pages in binder order. Pages are identified by id (not position), so adding a page at the start doesn't change
-  // where any card is placed.
+  // The pages in binder order. Pages are identified by id (not position), so a card's placement doesn't depend on where
+  // its page is in the binder.
   pageIds: string[];
   deleted: boolean;
   createdAt: number;
@@ -79,9 +79,6 @@ export interface BinderCardRecord {
   updatedAt: number;
   dirty: number;
 }
-
-// Which end of the binder a page is added to.
-export type BinderEnd = "start" | "end";
 
 // Everything on disk, for loading into memory. Includes deleted binders and cards, kept
 // until deletion has been synced to permanent storage.
@@ -240,16 +237,15 @@ export async function deleteBinderInDatabase(binderId: string): Promise<BinderRe
   });
 }
 
-// Adds one empty page at the start or the end of the binder. Resolves with the binder as saved. A binder that doesn't
+// Adds one empty page at the end of the binder. Resolves with the binder as saved. A binder that doesn't
 // exist or is deleted throws.
-export async function addPageToBinderInDatabase(binderId: string, end: BinderEnd): Promise<BinderRecord> {
+export async function addPageToBinderInDatabase(binderId: string): Promise<BinderRecord> {
   const connection = await getBindersConnection();
   return connection.runTransaction([BINDERS_STORE], "readwrite", async (tx): Promise<BinderRecord> => {
     const store = tx.objectStore(BINDERS_STORE);
     const binder = await getLiveBinderOrThrow(store, binderId);
 
-    const newPageId = makeRecordId();
-    const pageIds = end === "start" ? [newPageId, ...binder.pageIds] : [...binder.pageIds, newPageId];
+    const pageIds = [...binder.pageIds, makeRecordId()];
     const updatedBinder = changedRecord(binder, { pageIds }, Date.now());
     await requestToPromise(store.put(updatedBinder));
     return updatedBinder;

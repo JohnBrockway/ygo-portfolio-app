@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
+import { BinderDetailPage } from "./pages/BinderDetailPage";
 import { BindersPage } from "./pages/BindersPage";
 import { CardDetailPage } from "./pages/CardDetailPage";
 import { CardsPage } from "./pages/CardsPage";
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/lists" element={<ListsPage />} />
           <Route path="/lists/:listId" element={<ListDetailPage />} />
           <Route path="/binders" element={<BindersPage />} />
+          <Route path="/binders/:binderId" element={<BinderDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

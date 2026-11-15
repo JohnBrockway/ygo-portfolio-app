@@ -12,7 +12,7 @@ import {
   removeCardFromBinderInDatabase,
   renameBinderInDatabase,
 } from "./bindersDb";
-import type { BinderCardRecord, BinderEnd, BinderRecord, BinderSaveResult, SlotPlacement } from "./bindersDb";
+import type { BinderCardRecord, BinderRecord, BinderSaveResult, SlotPlacement } from "./bindersDb";
 import { getGroup, groupBy } from "./recordGroupingHelpers";
 import { canChangeLists, getListEntries, getLists } from "./lists";
 import { canChangeState, createMemoryStore, replaceActiveRecords } from "./memoryStore";
@@ -156,10 +156,10 @@ export function deleteBinder(binderId: string): Promise<BinderSaveResult> {
   });
 }
 
-// Adds one empty page at the start or the end of the binder. The page shows up once it has been saved.
-export function addPageToBinder(binderId: string, end: BinderEnd): Promise<BinderSaveResult> {
+// Adds one empty page at the end of the binder. The page shows up once it has been saved.
+export function addPageToBinder(binderId: string): Promise<BinderSaveResult> {
   return bindersStore.enqueueChange("Couldn't add page to binder", async () => {
-    const binder = await addPageToBinderInDatabase(binderId, end);
+    const binder = await addPageToBinderInDatabase(binderId);
     applyBinder(binder);
     bindersStore.notifyOtherTabs();
     return SAVED_WITHOUT_RECORD;
