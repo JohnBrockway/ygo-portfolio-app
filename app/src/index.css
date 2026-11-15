@@ -541,6 +541,26 @@ a {
   font-size: 0.875rem;
 }
 
+.grid-size-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.grid-size-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Overrides .inline-form .text-input above (same specificity, so being later in the file is what makes it win). */
+.grid-size-field .text-input {
+  flex: none;
+  width: 3rem;
+  text-align: center;
+}
+
 /* Tile image made of several images stacked like a pile of cards (see TileStack). It reuses the .tile-image box;
    the area sits inside it where the box's 0.5rem padding would be, and TileStack places each image in it. */
 

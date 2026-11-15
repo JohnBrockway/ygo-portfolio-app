@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: "/sets", label: "Sets" },
   { to: "/cards", label: "Cards" },
   { to: "/lists", label: "Lists" },
+  { to: "/binders", label: "Binders" },
   { to: "/settings", label: "Settings" },
 ];
 
