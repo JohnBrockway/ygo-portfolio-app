@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from "react";
 import {
   changeEntryQuantityInDatabase,
   clearListsInDatabase,
@@ -8,13 +7,15 @@ import {
   renameListInDatabase,
 } from "./listsDb";
 import type { ListEntryRecord, ListRecord, SaveResult } from "./listsDb";
+import { canChangeState, createMemoryStore, getGroup, groupBy, replaceActiveRecords } from "./memoryStore";
+import type { MemoryStoreState } from "./memoryStore";
+import { compareByOrder, SAVED_WITHOUT_RECORD } from "./recordConventions";
 import type { Edition } from "./types";
 
-export interface ListsState {
-  // "error": the last load or save failed. The lists and entries below are the last known ones and may be out of
-  // date, so app is read-only until a later load succeeds.
-  status: "loading" | "ready" | "error";
-  error: string | null;
+// The memory layer for lists. binders.ts is the same layer for binders and is laid out the same way; what both do alike
+// lives in memoryStore.ts.
+
+export interface ListsState extends MemoryStoreState {
   // Only the lists the user has (not deleted). Deleted lists stay in the database until they have been synced, but
   // are left out here.
   activeLists: readonly ListRecord[];
@@ -24,23 +25,6 @@ export interface ListsState {
   // The active entries, grouped for lookups.
   byPrinting: ReadonlyMap<string, readonly ListEntryRecord[]>;
   byList: ReadonlyMap<string, readonly ListEntryRecord[]>;
-}
-
-function groupBy(
-  entries: readonly ListEntryRecord[],
-  getKey: (entry: ListEntryRecord) => string,
-): Map<string, ListEntryRecord[]> {
-  const groups = new Map<string, ListEntryRecord[]>();
-  for (const entry of entries) {
-    const key = getKey(entry);
-    const group = groups.get(key);
-    if (group === undefined) {
-      groups.set(key, [entry]);
-    } else {
-      group.push(entry);
-    }
-  }
-  return groups;
 }
 
 function makeState(
@@ -59,118 +43,38 @@ function makeState(
   };
 }
 
-// The database is the source of truth; this is a copy of it in memory, so components can read synchronously.
-// This memory copy only ever changes based on reading the database (never ahead of it).
+// Reads every list and entry from the database, for memory.
+async function loadListsState(): Promise<ListsState> {
+  const data = await loadListsFromDatabase();
+  const activeLists = data.lists.filter((list) => !list.deleted);
+  const activeEntries = data.entries.filter((entry) => entry.quantity > 0);
+  return makeState("ready", null, activeLists, activeEntries);
+}
+
 // Components should only ever read through useLiveLists, change entries through changeEntryQuantity and change
 // lists through createList, renameList, and deleteList.
-// useSyncExternalStore needs getLists to return the same object until something changes, so the state is
-// fully replaced (not edited) on every change.
-let state: ListsState = makeState("loading", null, [], []);
-
-const listeners = new Set<() => void>();
-
-function setState(updatedState: ListsState): void {
-  state = updatedState;
-  listeners.forEach((listener) => listener());
-}
-
-// Keeps what is in memory, but marks it as no longer to be trusted.
-function setErrorState(error: unknown): void {
-  const message = error instanceof Error ? error.message : "Unknown error";
-  setState(makeState("error", message, state.activeLists, state.activeEntries));
-}
-
-export function getLists(): ListsState {
-  return state;
-}
-
-// Lists can only be changed once they have loaded, and not while they are in error (see ListsState.status).
-// The buttons that change lists are disabled otherwise, and changes that still arrive (a stale click) are refused.
-export function canChangeLists(listsState: ListsState): boolean {
-  return listsState.status === "ready";
-}
-
-export function subscribeToLists(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-// The current lists, re-rendering the component whenever they change.
-// How components stay up to date (useSyncExternalStore is React's way of reading data that lives outside React):
-// 1. React calls subscribeToLists once for each component using useLiveLists, handing it a callback.
-// 2. Whenever setState runs, every callback is called. That only tells React "something changed".
-// 3. React then calls getLists and compares the result with last time. A different object re-renders that
-//    component; the same object does nothing. That is why the state is replaced and never edited.
-export function useLiveLists(): ListsState {
-  return useSyncExternalStore(subscribeToLists, getLists);
-}
-
-// Everything that touches the database goes through this queue, one operation at a time, and each result is
-// applied to memory before the next operation starts. So memory is always the result of the latest operation,
-// never a slow read landing on top of a newer write.
-// The queue's own value is never read, only whether the last operation has finished, hence unknown.
-let queue: Promise<unknown> = Promise.resolve();
-
-function enqueue<T>(operation: () => Promise<T>): Promise<T> {
-  const result = queue.then(operation);
-  // A failed operation must not stop the ones queued behind it.
-  queue = result.catch(() => undefined);
-  return result;
-}
-
-// --- Other tabs ---
-
-// Tabs tell each other if they've changed data, because IndexedDB won't.
-const channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("ygo-lists");
-
-function notifyOtherTabs(): void {
-  if (channel !== null) {
-    channel.postMessage("changed");
-  }
-}
-
-if (channel !== null) {
-  channel.onmessage = () => {
-    void refreshLists();
-  };
-}
-
-// Reload tabs that may be stale/sleeping and have missed notifications for ex. from other tabs.
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    void refreshLists();
-  }
+const listsStore = createMemoryStore<ListsState>({
+  name: "lists",
+  initialState: makeState("loading", null, [], []),
+  loadState: loadListsState,
+  clearDatabase: clearListsInDatabase,
 });
 
-// --- Loading and changing ---
+export const getLists = listsStore.getState;
 
-// Reads every list and entry from the database into memory. Only call this from inside the queue.
-async function loadIntoMemory(): Promise<void> {
-  try {
-    const data = await loadListsFromDatabase();
-    const activeLists = data.lists.filter((list) => !list.deleted);
-    const activeEntries = data.entries.filter((entry) => entry.quantity > 0);
-    setState(makeState("ready", null, activeLists, activeEntries));
-  } catch (error) {
-    console.error("Couldn't load lists", error);
-    setErrorState(error);
-  }
-}
+// Whether lists can be changed (see canChangeState).
+export const canChangeLists = canChangeState;
 
-export function refreshLists(): Promise<void> {
-  return enqueue(loadIntoMemory);
-}
+export const subscribeToLists = listsStore.subscribe;
+
+// The current lists, re-rendering the component whenever they change.
+export const useLiveLists = listsStore.useLiveState;
+
+// Reads every list and entry from the database into memory.
+export const refreshLists = listsStore.refresh;
 
 // Dev tool: wipes the lists in the database, then reloads memory from it.
-export function clearLists(): Promise<void> {
-  return enqueue(async () => {
-    await clearListsInDatabase();
-    await loadIntoMemory();
-    notifyOtherTabs();
-  });
-}
+export const clearLists = listsStore.clear;
 
 export function getEntryQuantity(
   listsState: ListsState,
@@ -186,60 +90,43 @@ export function getEntryQuantity(
   return entry === undefined ? 0 : entry.quantity;
 }
 
-// One shared empty array, so callers can use the result as a dependency of useMemo without
-// it looking changed on every render.
-const NO_ENTRIES: readonly ListEntryRecord[] = [];
-
 // Every entry on the list (none removed), in no particular order.
 export function getListEntries(listsState: ListsState, listId: string): readonly ListEntryRecord[] {
-  return listsState.byList.get(listId) ?? NO_ENTRIES;
+  return getGroup(listsState.byList, listId);
 }
 
-function hasSameKey(entry: ListEntryRecord, other: ListEntryRecord): boolean {
-  return entry.listId === other.listId && entry.printingId === other.printingId && entry.edition === other.edition;
+function getEntryKey(entry: ListEntryRecord): string {
+  return JSON.stringify([entry.listId, entry.printingId, entry.edition]);
 }
 
-// Puts a committed entry into memory, in place of memory's copy of the same entry if it has one. The committed entry
-// is what the database holds now so it replaces memory's copy. Nothing is written to the database here.
+// Puts a committed entry into memory, in place of memory's copy of the same entry if it has one. Nothing is written to
+// the database here.
 function applyEntry(entry: ListEntryRecord): void {
-  const otherEntries = state.activeEntries.filter((other) => !hasSameKey(entry, other));
-  const activeEntries = entry.quantity > 0 ? [...otherEntries, entry] : otherEntries;
-  setState(makeState(state.status, state.error, state.activeLists, activeEntries));
+  const state = listsStore.getState();
+  const activeEntries = replaceActiveRecords(
+    state.activeEntries,
+    [entry],
+    getEntryKey,
+    (committed) => committed.quantity > 0,
+  );
+  listsStore.setState(makeState(state.status, state.error, state.activeLists, activeEntries));
 }
 
-// Puts a committed list into memory, in place of memory's copy of the same list if it has one. The committed list is
-// what the database holds now so it replaces memory's copy. A deleted list is ignored (like a removed entry in
-// applyEntry), and its entries leave memory with it. Nothing is written to the database here.
+// Puts a committed list into memory, in place of memory's copy of the same list if it has one. A deleted list is
+// ignored (like a removed entry in applyEntry), and its entries leave memory with it. Nothing is written to the
+// database here.
 function applyList(list: ListRecord): void {
-  const otherLists = state.activeLists.filter((other) => other.id !== list.id);
-  const activeLists = list.deleted ? otherLists : [...otherLists, list].sort((a, b) => a.order - b.order);
+  const state = listsStore.getState();
+  const activeLists = replaceActiveRecords(
+    state.activeLists,
+    [list],
+    (other) => other.id,
+    (committed) => !committed.deleted,
+  ).sort(compareByOrder);
   const activeEntries = list.deleted
     ? state.activeEntries.filter((entry) => entry.listId !== list.id)
     : state.activeEntries;
-  setState(makeState(state.status, state.error, activeLists, activeEntries));
-}
-
-const NOT_SAVED: SaveResult = { status: "failed", record: null, nameProblem: null };
-const SAVED_WITHOUT_LIST: SaveResult = { status: "saved", record: null, nameProblem: null };
-
-// Runs a change to the database through the queue. `change` makes the database call, applies what was saved to memory
-// and tells the other tabs; this adds what every change needs around that:
-// - Block saving while the lists are loading or in error (the UI is disabled then, so this is a stale click).
-// - If the database call throws, nothing was saved and memory didn't change, so what is shown is still true. But a
-//   database that can't be written to needs attention, so stop changes and show the banner until a reload works.
-function enqueueChange(failureMessage: string, change: () => Promise<SaveResult>): Promise<SaveResult> {
-  return enqueue(async () => {
-    if (!canChangeLists(state)) {
-      return NOT_SAVED;
-    }
-    try {
-      return await change();
-    } catch (error) {
-      console.error(failureMessage, error);
-      setErrorState(error);
-      return NOT_SAVED;
-    }
-  });
+  listsStore.setState(makeState(state.status, state.error, activeLists, activeEntries));
 }
 
 // Changes how many of this printing's edition are on the list (0 removes it). `change` gets the quantity the
@@ -253,13 +140,13 @@ export function changeEntryQuantity(
   edition: Edition,
   change: (current: number) => number,
 ): Promise<SaveResult> {
-  return enqueueChange("Couldn't save list entry", async () => {
+  return listsStore.enqueueChange("Couldn't save list entry", async () => {
     const entry = await changeEntryQuantityInDatabase(listId, printingId, edition, change);
     if (entry !== null) {
       applyEntry(entry);
-      notifyOtherTabs();
+      listsStore.notifyOtherTabs();
     }
-    return SAVED_WITHOUT_LIST;
+    return SAVED_WITHOUT_RECORD;
   });
 }
 
@@ -267,11 +154,11 @@ export function changeEntryQuantity(
 // "invalid-name" (empty, or already used by another list) is the caller's to show, and is not an error state: nothing
 // went wrong with the database. "failed" on the other hand is an error, so should be caught by the banner.
 export function createList(name: string): Promise<SaveResult> {
-  return enqueueChange("Couldn't create list", async () => {
+  return listsStore.enqueueChange("Couldn't create list", async () => {
     const result = await createListInDatabase(name);
     if (result.status === "saved" && result.record !== null) {
       applyList(result.record);
-      notifyOtherTabs();
+      listsStore.notifyOtherTabs();
     }
     return result;
   });
@@ -280,11 +167,11 @@ export function createList(name: string): Promise<SaveResult> {
 // Renames a list of the user's own (never a built-in one). The new name shows up once it has been saved. Results are
 // the same as for createList: "invalid-name" is the caller's to show, "failed" is already in the banner.
 export function renameList(listId: string, name: string): Promise<SaveResult> {
-  return enqueueChange("Couldn't rename list", async () => {
+  return listsStore.enqueueChange("Couldn't rename list", async () => {
     const result = await renameListInDatabase(listId, name);
     if (result.status === "saved" && result.record !== null) {
       applyList(result.record);
-      notifyOtherTabs();
+      listsStore.notifyOtherTabs();
     }
     return result;
   });
@@ -293,10 +180,10 @@ export function renameList(listId: string, name: string): Promise<SaveResult> {
 // Deletes a list of the user's own (never a built-in one), along with its entries. They leave memory once the
 // deletion has been saved.
 export function deleteList(listId: string): Promise<SaveResult> {
-  return enqueueChange("Couldn't delete list", async () => {
+  return listsStore.enqueueChange("Couldn't delete list", async () => {
     const deletedList = await deleteListInDatabase(listId);
     applyList(deletedList);
-    notifyOtherTabs();
-    return SAVED_WITHOUT_LIST;
+    listsStore.notifyOtherTabs();
+    return SAVED_WITHOUT_RECORD;
   });
 }

@@ -88,3 +88,10 @@ export interface RecordSaveResult<TRecord> {
   record: TRecord | null;
   nameProblem: NameProblem | null;
 }
+
+// For the layer that keeps memory: a change that didn't happen.
+export const NOT_SAVED: RecordSaveResult<never> = { status: "failed", record: null, nameProblem: null };
+
+// For the layer that keeps memory: a change that was saved but has no record to report (anything except creating or
+// renaming a named record).
+export const SAVED_WITHOUT_RECORD: RecordSaveResult<never> = { status: "saved", record: null, nameProblem: null };
