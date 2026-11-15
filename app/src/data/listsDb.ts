@@ -62,8 +62,6 @@ export interface ListsData {
   entries: ListEntryRecord[];
 }
 
-export type ListNameProblem = NameProblem;
-
 // What every change to the lists reports, in both layers (see RecordSaveResult). `record` is the list as saved when
 // one was created or renamed.
 export type SaveResult = RecordSaveResult<ListRecord>;
