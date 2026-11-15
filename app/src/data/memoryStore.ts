@@ -19,30 +19,7 @@ export function canChangeState(state: MemoryStoreState): boolean {
   return state.status === "ready";
 }
 
-// --- Helpers for building the state ---
-
-export function groupBy<T>(items: readonly T[], getKey: (item: T) => string): Map<string, T[]> {
-  const groups = new Map<string, T[]>();
-  for (const item of items) {
-    const key = getKey(item);
-    const group = groups.get(key);
-    if (group === undefined) {
-      groups.set(key, [item]);
-    } else {
-      group.push(item);
-    }
-  }
-  return groups;
-}
-
-// One shared empty array, so callers can use the result of getGroup as a dependency of useMemo without
-// it looking changed on every render.
-const NO_RECORDS: readonly never[] = [];
-
-// The group of a map made by groupBy, or none if the key has no group.
-export function getGroup<T>(groups: ReadonlyMap<string, readonly T[]>, key: string): readonly T[] {
-  return groups.get(key) ?? NO_RECORDS;
-}
+// --- Putting committed records into the state ---
 
 // The active records after committed records have been put into memory: each committed record replaces the active record
 // with the same key, if there is one, and is left out if it is no longer active (removed or deleted). The committed

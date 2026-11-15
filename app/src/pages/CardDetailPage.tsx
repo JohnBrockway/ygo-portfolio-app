@@ -6,7 +6,7 @@ import { SetCodeTile } from "../components/SetCodeTile";
 import { setNumberCollator } from "../data/collators";
 import { getAvailableImages } from "../data/images";
 import type { AvailableImage } from "../data/images";
-import { indexBy } from "../data/indexBy";
+import { indexBy } from "../data/recordGroupingHelpers";
 import { loadMasterData } from "../data/masterData";
 import type { MasterData, SetCode } from "../data/types";
 import { useLoadOnMount } from "../data/useLoadOnMount";

@@ -4,7 +4,7 @@ import { BackLink } from "../components/BackLink";
 import { SetCodeTile } from "../components/SetCodeTile";
 import { SetMeta } from "../components/SetMeta";
 import { setNumberCollator } from "../data/collators";
-import { indexBy } from "../data/indexBy";
+import { indexBy } from "../data/recordGroupingHelpers";
 import { loadMasterData } from "../data/masterData";
 import type { Card, MasterData, SetCode } from "../data/types";
 import { useLoadOnMount } from "../data/useLoadOnMount";

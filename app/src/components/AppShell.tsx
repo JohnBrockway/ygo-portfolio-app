@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { refreshBinders, useLiveBinders } from "../data/binders";
+import { refreshLists, useLiveLists } from "../data/lists";
+import { ErrorBanner } from "./ErrorBanner";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { ListsErrorBanner } from "./ListsErrorBanner";
 
 const NAV_ITEMS = [
   { to: "/sets", label: "Sets" },
@@ -11,6 +13,8 @@ const NAV_ITEMS = [
 
 export function AppShell() {
   const location = useLocation();
+  const listsState = useLiveLists();
+  const bindersState = useLiveBinders();
 
   return (
     <div className="shell">
@@ -23,7 +27,8 @@ export function AppShell() {
         ))}
       </nav>
       <main className="content">
-        <ListsErrorBanner />
+        <ErrorBanner what="lists" state={listsState} retry={refreshLists} />
+        <ErrorBanner what="binders" state={bindersState} retry={refreshBinders} />
         <ErrorBoundary key={location.pathname}>
           <Outlet />
         </ErrorBoundary>

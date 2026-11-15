@@ -1,5 +1,5 @@
 import { setNumberCollator, titleCollator } from "./collators";
-import { indexBy } from "./indexBy";
+import { indexBy } from "./recordGroupingHelpers";
 import type { ListEntryRecord } from "./listsDb";
 import type { Card, CardSet, MasterData, Printing, SetCode } from "./types";
 

@@ -5,7 +5,7 @@ import { FilterBar } from "../components/FilterBar";
 import { SetCodeTile } from "../components/SetCodeTile";
 import { setNumberCollator, titleCollator } from "../data/collators";
 import { getGames } from "../data/games";
-import { indexBy } from "../data/indexBy";
+import { indexBy } from "../data/recordGroupingHelpers";
 import { loadMasterData } from "../data/masterData";
 import { getCardIdsWithUnverifiedPrintings } from "../data/printings";
 import { getRegions } from "../data/regions";

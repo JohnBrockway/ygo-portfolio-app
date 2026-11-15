@@ -1,5 +1,5 @@
 import { getArtworkImageFile } from "./images";
-import { indexBy } from "./indexBy";
+import { indexBy } from "./recordGroupingHelpers";
 import { draftKey, withoutDraft } from "./overrideDrafts";
 import type { OverrideDraft, OverrideDrafts } from "./overrideDrafts";
 import { cleanLabel } from "./printings";

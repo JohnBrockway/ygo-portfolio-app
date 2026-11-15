@@ -1,3 +1,4 @@
+import { getGroup, groupBy } from "./recordGroupingHelpers";
 import {
   changeEntryQuantityInDatabase,
   clearListsInDatabase,
@@ -7,7 +8,7 @@ import {
   renameListInDatabase,
 } from "./listsDb";
 import type { ListEntryRecord, ListRecord, SaveResult } from "./listsDb";
-import { canChangeState, createMemoryStore, getGroup, groupBy, replaceActiveRecords } from "./memoryStore";
+import { canChangeState, createMemoryStore, replaceActiveRecords } from "./memoryStore";
 import type { MemoryStoreState } from "./memoryStore";
 import { compareByOrder, SAVED_WITHOUT_RECORD } from "./recordConventions";
 import type { Edition } from "./types";
