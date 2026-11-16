@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
-import { BinderMeta } from "../components/BinderMeta";
 import { BinderPool } from "../components/BinderPool";
 import { BinderSpreadView } from "../components/BinderSpreadView";
 import {
@@ -192,7 +191,6 @@ export function BinderDetailPage() {
     content = (
       <>
         <h1>{binder.name}</h1>
-        <BinderMeta binder={binder} cards={cards} />
         {/* The key starts the page view over (back at the first page) when the address changes to another binder. */}
         <BinderContents key={binder.id} binder={binder} cards={cards} data={data} changesDisabled={changesDisabled} />
       </>

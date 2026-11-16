@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import type { BinderCardRecord } from "../data/bindersDb";
+import { formatCount } from "../data/formatCount";
 import { joinRecordsWithMasterData } from "../data/foundPrintings";
 import type { FoundPrinting } from "../data/foundPrintings";
 import { AddListButtons } from "./AddListButtons";
@@ -38,6 +39,9 @@ export function BinderPool({
   return (
     <section className="binder-pool">
       <h2 className="binder-pool-title">Card pool</h2>
+      <div className="row-meta">
+        <span>{formatCount(cards.length, "card", "cards")}</span>
+      </div>
       <AddListButtons binderId={binderId} changesDisabled={changesDisabled} />
       {contents}
     </section>
