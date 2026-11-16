@@ -6,12 +6,13 @@ import { changeEntryQuantity } from "../data/lists";
 import { OWNED_LIST_ID } from "../data/listsDb";
 import type { ListEntryRecord } from "../data/listsDb";
 import { getVerifiedArtworks } from "../data/printings";
+import { CornerRemoveButton } from "./CornerRemoveButton";
 import { MissingPrintingTile } from "./MissingPrintingTile";
 import { PrintingTileMeta } from "./PrintingTileMeta";
 import { TileLink } from "./TileLink";
 
-// One entry of a list: the specific printing and edition as a tile, with a button under it that removes the entry
-// from the list. backLabel is the name of the page this is shown on, for the Back link.
+// One entry of a list: the specific printing and edition as a tile, with a button on its corner that removes the
+// entry from the list. backLabel is the name of the page this is shown on, for the Back link.
 export function ListEntryTile({
   listEntry,
   backLabel,
@@ -62,17 +63,13 @@ export function ListEntryTile({
   }
 
   return (
-    <div className="tile-with-remove">
+    <>
       {tile}
-      <button
-        className="action-button"
-        type="button"
-        aria-label={`Remove ${name} (${editionText}) from this list`}
+      <CornerRemoveButton
+        label={`Remove ${name} (${editionText}) from this list`}
         disabled={changesDisabled || removing}
         onClick={handleRemove}
-      >
-        Remove
-      </button>
-    </div>
+      />
+    </>
   );
 }

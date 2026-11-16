@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
+import { tileTypeClass } from "../data/tileTypeClass";
 import type { Card } from "../data/types";
 import { LinkWithReturnInfo } from "./LinkWithReturnInfo";
 import { TileContent } from "./TileContent";
-import { tileTypeClass } from "../data/tileTypeClass";
 
 // A tile that is a link: tint, unverified badge, image, and the card's title, with the caller's meta rows under it.
 export function TileLink({

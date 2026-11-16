@@ -3,8 +3,9 @@ import { MIN_PAGE_COUNT } from "../data/bindersDb";
 import type { BinderRecord } from "../data/bindersDb";
 import { getPageNumber } from "../data/binderSpreads";
 import type { BinderSpread } from "../data/binderSpreads";
-import { PlusIcon, TrashIcon } from "./ActionIcons";
+import { PlusIcon } from "./ActionIcons";
 import { BinderPageGrid } from "./BinderPageGrid";
+import { CornerRemoveButton } from "./CornerRemoveButton";
 
 // The two shapes of the button that adds pages.
 // - "ghost": the empty right half of a two-page spread that has a single page, as big as a page would be.
@@ -38,7 +39,7 @@ function AddPagesButton({
   );
 }
 
-// The round button on the top right corner of the last page, which removes pages from the end of the binder.
+// The button on the top right corner of the last page, which removes pages from the end of the binder.
 function RemovePagesButton({
   disabled,
   pageCountToRemove,
@@ -53,18 +54,7 @@ function RemovePagesButton({
       ? "Remove the last page of the binder"
       : `Remove the last ${pageCountToRemove} pages of the binder`;
 
-  return (
-    <button
-      className="binder-remove-pages"
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      onClick={() => onRemovePages(pageCountToRemove)}
-    >
-      <TrashIcon />
-    </button>
-  );
+  return <CornerRemoveButton label={label} disabled={disabled} onClick={() => onRemovePages(pageCountToRemove)} />;
 }
 
 // One page, with the narrow add pages strip beside it and the remove pages button on its corner if it is asked to have

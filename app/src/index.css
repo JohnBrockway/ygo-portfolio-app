@@ -255,6 +255,7 @@ a {
 }
 
 .tile-grid > li {
+  position: relative;
   width: var(--tile-width);
 }
 
@@ -518,6 +519,38 @@ a {
   padding: 0;
 }
 
+.corner-remove-button {
+  position: absolute;
+  top: -0.75rem;
+  right: -0.75rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.corner-remove-button:hover,
+.corner-remove-button:focus-visible {
+  border-color: var(--danger);
+  color: var(--danger);
+  outline: none;
+}
+
+.corner-remove-button:disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
+  opacity: 0.4;
+  cursor: default;
+}
+
 .inline-form {
   display: flex;
   flex-wrap: wrap;
@@ -635,41 +668,6 @@ a {
   width: var(--binder-strip-width);
 }
 
-/* The button that removes pages from the end of the binder: a round button half outside the top right corner of the
-   last page, so it doesn't cover a slot. It sticks out less than the gap between pages and the strip, so it never
-   touches the add button. */
-.binder-remove-pages {
-  position: absolute;
-  top: -0.75rem;
-  right: -0.75rem;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.binder-remove-pages:hover,
-.binder-remove-pages:focus-visible {
-  border-color: var(--danger);
-  color: var(--danger);
-  outline: none;
-}
-
-.binder-remove-pages:disabled {
-  border-color: var(--border);
-  color: var(--text-muted);
-  opacity: 0.4;
-  cursor: default;
-}
-
 .binder-page {
   display: grid;
   gap: 0.5rem;
@@ -742,10 +740,15 @@ a {
   border-color: var(--tile-trap-tag-border);
 }
 
+/* The image and the badge on it: the frame is what the badge is placed against. */
+.tile-image-frame {
+  position: relative;
+}
+
 .tile-unverified {
   position: absolute;
-  top: 0.375rem;
-  right: 0.375rem;
+  bottom: 0.375rem;
+  left: 0.375rem;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -759,22 +762,6 @@ a {
   font-weight: 600;
   line-height: 1;
   opacity: 0.8;
-}
-
-.tile-with-remove {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  height: 100%; /* entries in the same row end up the same height */
-}
-
-.tile-with-remove > .tile {
-  flex: 1;
-  height: auto;
-}
-
-.tile-with-remove .action-button {
-  width: 100%;
 }
 
 .tile-missing,
