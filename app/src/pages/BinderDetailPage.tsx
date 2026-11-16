@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
 import { BinderMeta } from "../components/BinderMeta";
+import { BinderPool } from "../components/BinderPool";
 import { BinderSpreadView } from "../components/BinderSpreadView";
 import {
   addPageToBinder,
@@ -12,10 +13,14 @@ import {
   removeLastPageFromBinder,
   useLiveBinders,
 } from "../data/binders";
-import type { BinderRecord, BinderSaveResult } from "../data/bindersDb";
+import type { BinderCardRecord, BinderRecord, BinderSaveResult } from "../data/bindersDb";
 import { findSpreadIndex, getBinderSpreads, getPageNumber } from "../data/binderSpreads";
 import type { BinderSpread } from "../data/binderSpreads";
+import { buildFoundPrintingsById } from "../data/foundPrintings";
+import { loadMasterData } from "../data/masterData";
+import type { MasterData } from "../data/types";
 import { useLiveMediaQuery } from "../data/useLiveMediaQuery";
+import { useLoadOnMount } from "../data/useLoadOnMount";
 
 // From this screen width two pages fit side by side; below it the binder is shown a page at a time.
 const TWO_PAGE_LAYOUT_QUERY = "(min-width: 1000px)";
@@ -30,13 +35,25 @@ function describeSpread(binder: BinderRecord, spread: BinderSpread): string {
   return `Page ${firstPageNumber} of ${pageCount}`;
 }
 
-function BinderContents({ binder, changesDisabled }: { binder: BinderRecord; changesDisabled: boolean }) {
+function BinderContents({
+  binder,
+  cards,
+  data,
+  changesDisabled,
+}: {
+  binder: BinderRecord;
+  cards: readonly BinderCardRecord[];
+  data: MasterData;
+  changesDisabled: boolean;
+}) {
   const twoPageLayout = useLiveMediaQuery(TWO_PAGE_LAYOUT_QUERY);
   // A page that is open, not a position: so the same page stays open when the screen changes between one and two pages
   // at a time, or when pages are added or removed. null until the user has flipped to somewhere, which is the first
   // page.
   const [viewedPageId, setViewedPageId] = useState<string | null>(null);
   const [changingPages, setChangingPages] = useState(false);
+  // Built once per data load, not per change to the binder.
+  const foundPrintingsById = useMemo(() => buildFoundPrintingsById(data), [data]);
 
   const spreads = getBinderSpreads(binder.pageIds, twoPageLayout);
   const spreadIndex = findSpreadIndex(spreads, viewedPageId);
@@ -139,6 +156,12 @@ function BinderContents({ binder, changesDisabled }: { binder: BinderRecord; cha
           Next
         </button>
       </div>
+      <BinderPool
+        binderId={binder.id}
+        cards={cards}
+        foundPrintingsById={foundPrintingsById}
+        changesDisabled={changesDisabled}
+      />
     </>
   );
 }
@@ -146,12 +169,15 @@ function BinderContents({ binder, changesDisabled }: { binder: BinderRecord; cha
 export function BinderDetailPage() {
   const { binderId } = useParams();
   const bindersState = useLiveBinders();
+  const { data, error } = useLoadOnMount(loadMasterData);
 
   const binder = bindersState.activeBinders.find((candidate) => candidate.id === binderId);
   const changesDisabled = !canChangeBinders(bindersState);
 
   let content: ReactNode;
-  if (bindersState.status === "loading") {
+  if (error !== null) {
+    content = <p>Couldn't load binder contents: {error}</p>;
+  } else if (data === null || bindersState.status === "loading") {
     content = <p className="muted">Loading binder…</p>;
   } else if (binder === undefined) {
     // Also what shows when the binder was deleted in another tab, or after a failed load (the banner says why).
@@ -162,12 +188,13 @@ export function BinderDetailPage() {
       </>
     );
   } else {
+    const cards = getBinderCards(bindersState, binder.id);
     content = (
       <>
         <h1>{binder.name}</h1>
-        <BinderMeta binder={binder} cards={getBinderCards(bindersState, binder.id)} />
+        <BinderMeta binder={binder} cards={cards} />
         {/* The key starts the page view over (back at the first page) when the address changes to another binder. */}
-        <BinderContents key={binder.id} binder={binder} changesDisabled={changesDisabled} />
+        <BinderContents key={binder.id} binder={binder} cards={cards} data={data} changesDisabled={changesDisabled} />
       </>
     );
   }

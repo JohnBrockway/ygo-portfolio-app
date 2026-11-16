@@ -699,6 +699,26 @@ a {
   gap: 0.5rem;
 }
 
+/* Binder page: the card pool under the pages. Its tiles are the same ones the lists show (a tile-grid of tiles, each with
+   a remove button on its corner). */
+
+.binder-pool {
+  margin-top: 2rem;
+}
+
+.binder-pool-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.binder-pool-lists {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
 /* Tile image made of several images stacked like a pile of cards (see TileStack). It reuses the .tile-image box;
    the area sits inside it where the box's 0.5rem padding would be, and TileStack places each image in it. */
 

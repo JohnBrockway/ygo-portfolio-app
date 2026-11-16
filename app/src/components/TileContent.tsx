@@ -9,7 +9,7 @@ const MAX_STACKED_IMAGES = 3;
 
 const UNVERIFIED_LABEL = "Some printings are not verified";
 
-// What is inside a tile: unverified badge, image, and the card's title, with the caller's meta rows under it. The
+// What is inside a tile: image with the unverified badge on it, and the card's title, with the caller's meta rows under it. The
 // element around it (a link, a button, a plain box) is the caller's, and carries the tint (see tileTypeClass).
 export function TileContent({
   card,
@@ -38,8 +38,10 @@ export function TileContent({
 
   return (
     <>
-      {unverifiedBadge}
-      {image}
+      <div className="tile-image-frame">
+        {image}
+        {unverifiedBadge}
+      </div>
       <div className="tile-body">
         <div className="tile-title">{card.title}</div>
         {children}
