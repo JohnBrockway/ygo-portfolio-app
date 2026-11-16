@@ -35,6 +35,9 @@ export const MAX_GRID_SIZE = 6;
 // How many pages a new binder starts with: a single first page, one spread, and a single last page.
 const INITIAL_PAGE_COUNT = 4;
 
+// The fewest pages a binder can have: removing pages from the end stops there.
+export const MIN_PAGE_COUNT = 1;
+
 export interface BinderRecord {
   id: string;
   name: string;
@@ -90,6 +93,13 @@ export interface BindersData {
 // What every change to the binders reports, in both layers (see RecordSaveResult). `record` is the binder as saved
 // when one was created or renamed.
 export type BinderSaveResult = RecordSaveResult<BinderRecord>;
+
+// What removing the last page of a binder changed, as saved: the binder without that page, and the cards that were in
+// its slots, which are now unplaced (they stay in the binder).
+export interface LastPageRemoval {
+  binder: BinderRecord;
+  unplacedCards: BinderCardRecord[];
+}
 
 // --- Opening the database ---
 
@@ -249,6 +259,35 @@ export async function addPageToBinderInDatabase(binderId: string): Promise<Binde
     const updatedBinder = changedRecord(binder, { pageIds }, Date.now());
     await requestToPromise(store.put(updatedBinder));
     return updatedBinder;
+  });
+}
+
+// Removes the last page of the binder. The cards in its slots are not removed: they become unplaced, in the same
+// transaction, so no card is left pointing at a page that is gone. A binder that doesn't exist or is deleted throws, and
+// so does a binder that has no more than MIN_PAGE_COUNT pages (the caller is to keep the minimum). Resolves with the
+// binder and the cards that changed, as saved.
+export async function removeLastPageFromBinderInDatabase(binderId: string): Promise<LastPageRemoval> {
+  const connection = await getBindersConnection();
+  return connection.runTransaction([BINDERS_STORE, CARDS_STORE], "readwrite", async (tx): Promise<LastPageRemoval> => {
+    const binderStore = tx.objectStore(BINDERS_STORE);
+    const cardStore = tx.objectStore(CARDS_STORE);
+    const binder = await getLiveBinderOrThrow(binderStore, binderId);
+
+    const lastPageId = binder.pageIds[binder.pageIds.length - 1];
+    if (lastPageId === undefined || binder.pageIds.length <= MIN_PAGE_COUNT) {
+      throw new Error(`Binder "${binderId}" has ${binder.pageIds.length} pages, so its last page can't be removed`);
+    }
+
+    const binderCards = await getCardsOfBinder(cardStore, binderId);
+
+    const now = Date.now();
+    const updatedBinder = changedRecord(binder, { pageIds: binder.pageIds.slice(0, -1) }, now);
+    const unplacedCards = binderCards
+      .filter((card) => card.placement !== null && card.placement.pageId === lastPageId)
+      .map((card) => changedRecord(card, { placement: null }, now));
+
+    await Promise.all([requestToPromise(binderStore.put(updatedBinder)), putAll(cardStore, unplacedCards)]);
+    return { binder: updatedBinder, unplacedCards };
   });
 }
 

@@ -635,6 +635,41 @@ a {
   width: var(--binder-strip-width);
 }
 
+/* The button that removes pages from the end of the binder: a round button half outside the top right corner of the
+   last page, so it doesn't cover a slot. It sticks out less than the gap between pages and the strip, so it never
+   touches the add button. */
+.binder-remove-pages {
+  position: absolute;
+  top: -0.75rem;
+  right: -0.75rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.binder-remove-pages:hover,
+.binder-remove-pages:focus-visible {
+  border-color: var(--danger);
+  color: var(--danger);
+  outline: none;
+}
+
+.binder-remove-pages:disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
+  opacity: 0.4;
+  cursor: default;
+}
+
 .binder-page {
   display: grid;
   gap: 0.5rem;

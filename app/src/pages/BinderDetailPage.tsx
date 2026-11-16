@@ -4,8 +4,15 @@ import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
 import { BinderMeta } from "../components/BinderMeta";
 import { BinderSpreadView } from "../components/BinderSpreadView";
-import { addPageToBinder, canChangeBinders, getBinderCards, getBinders, useLiveBinders } from "../data/binders";
-import type { BinderRecord } from "../data/bindersDb";
+import {
+  addPageToBinder,
+  canChangeBinders,
+  getBinderCards,
+  getBinders,
+  removeLastPageFromBinder,
+  useLiveBinders,
+} from "../data/binders";
+import type { BinderRecord, BinderSaveResult } from "../data/bindersDb";
 import { findSpreadIndex, getBinderSpreads, getPageNumber } from "../data/binderSpreads";
 import type { BinderSpread } from "../data/binderSpreads";
 import { useLiveMediaQuery } from "../data/useLiveMediaQuery";
@@ -26,9 +33,10 @@ function describeSpread(binder: BinderRecord, spread: BinderSpread): string {
 function BinderContents({ binder, changesDisabled }: { binder: BinderRecord; changesDisabled: boolean }) {
   const twoPageLayout = useLiveMediaQuery(TWO_PAGE_LAYOUT_QUERY);
   // A page that is open, not a position: so the same page stays open when the screen changes between one and two pages
-  // at a time, or when pages are added. null until the user has flipped to somewhere, which is the first page.
+  // at a time, or when pages are added or removed. null until the user has flipped to somewhere, which is the first
+  // page.
   const [viewedPageId, setViewedPageId] = useState<string | null>(null);
-  const [addingPages, setAddingPages] = useState(false);
+  const [changingPages, setChangingPages] = useState(false);
 
   const spreads = getBinderSpreads(binder.pageIds, twoPageLayout);
   const spreadIndex = findSpreadIndex(spreads, viewedPageId);
@@ -50,19 +58,27 @@ function BinderContents({ binder, changesDisabled }: { binder: BinderRecord; cha
     setViewedPageId(target[0]);
   }
 
-  // Adds pages one at a time (that is all the data layer does), stopping at the first that doesn't save. Pages that
-  // were already added stay.
-  async function handleAddPages(pageCount: number) {
-    setAddingPages(true);
+  // Changes pages one at a time (that is all the data layer does), stopping at the first change that doesn't save. Pages
+  // that were already changed stay. Resolves with whether every change saved.
+  async function changePagesOneByOne(
+    pageCount: number,
+    changeOnePage: () => Promise<BinderSaveResult>,
+  ): Promise<boolean> {
+    setChangingPages(true);
     let allSaved = true;
-    for (let added = 0; added < pageCount; added++) {
-      const result = await addPageToBinder(binder.id);
+    for (let changed = 0; changed < pageCount; changed++) {
+      const result = await changeOnePage();
       if (result.status !== "saved") {
         allSaved = false;
         break;
       }
     }
-    setAddingPages(false);
+    setChangingPages(false);
+    return allSaved;
+  }
+
+  async function handleAddPages(pageCount: number) {
+    const allSaved = await changePagesOneByOne(pageCount, () => addPageToBinder(binder.id));
     if (!allSaved) {
       // The banner explains.
       return;
@@ -80,6 +96,19 @@ function BinderContents({ binder, changesDisabled }: { binder: BinderRecord; cha
     }
   }
 
+  async function handleRemovePages(pageCount: number) {
+    // The page that is the last one once the pages are gone. It is shown first, so the view is never on a page that no
+    // longer exists.
+    const newLastPageId = binder.pageIds[binder.pageIds.length - 1 - pageCount];
+    if (newLastPageId === undefined) {
+      // The remove button should have been disabled here, so this is a mistake somewhere else.
+      throw new Error(`Binder "${binder.id}" doesn't have ${pageCount} pages to remove`);
+    }
+    setViewedPageId(newLastPageId);
+
+    await changePagesOneByOne(pageCount, () => removeLastPageFromBinder(binder.id));
+  }
+
   return (
     <>
       <BinderSpreadView
@@ -87,8 +116,9 @@ function BinderContents({ binder, changesDisabled }: { binder: BinderRecord; cha
         spread={spread}
         twoPageLayout={twoPageLayout}
         isFirstSpread={spreadIndex === 0}
-        addPagesDisabled={changesDisabled || addingPages}
+        pageChangesDisabled={changesDisabled || changingPages}
         onAddPages={handleAddPages}
+        onRemovePages={handleRemovePages}
       />
       <div className="binder-nav">
         <button

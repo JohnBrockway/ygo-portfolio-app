@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
+import { MIN_PAGE_COUNT } from "../data/bindersDb";
 import type { BinderRecord } from "../data/bindersDb";
 import { getPageNumber } from "../data/binderSpreads";
 import type { BinderSpread } from "../data/binderSpreads";
-import { PlusIcon } from "./ActionIcons";
+import { PlusIcon, TrashIcon } from "./ActionIcons";
 import { BinderPageGrid } from "./BinderPageGrid";
 
 // The two shapes of the button that adds pages.
@@ -37,23 +38,72 @@ function AddPagesButton({
   );
 }
 
-// One page, with the narrow add pages strip beside it if it is asked to have one.
+// The round button on the top right corner of the last page, which removes pages from the end of the binder.
+function RemovePagesButton({
+  disabled,
+  pageCountToRemove,
+  onRemovePages,
+}: {
+  disabled: boolean;
+  pageCountToRemove: number;
+  onRemovePages: (pageCount: number) => void;
+}) {
+  const label =
+    pageCountToRemove === 1
+      ? "Remove the last page of the binder"
+      : `Remove the last ${pageCountToRemove} pages of the binder`;
+
+  return (
+    <button
+      className="binder-remove-pages"
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={() => onRemovePages(pageCountToRemove)}
+    >
+      <TrashIcon />
+    </button>
+  );
+}
+
+// One page, with the narrow add pages strip beside it and the remove pages button on its corner if it is asked to have
+// them.
 function BinderPageFrame({
   binder,
   pageId,
   hasAddPagesStrip,
+  hasRemovePagesButton,
   addPagesDisabled,
+  removePagesDisabled,
+  pageCountToRemove,
   onAddPages,
+  onRemovePages,
 }: {
   binder: BinderRecord;
   pageId: string;
   hasAddPagesStrip: boolean;
+  hasRemovePagesButton: boolean;
   addPagesDisabled: boolean;
+  removePagesDisabled: boolean;
+  pageCountToRemove: number;
   onAddPages: (pageCount: number) => void;
+  onRemovePages: (pageCount: number) => void;
 }) {
   let addPagesStrip: ReactNode = null;
   if (hasAddPagesStrip) {
     addPagesStrip = <AddPagesButton shape="strip" disabled={addPagesDisabled} pageCountToAdd={1} onAddPages={onAddPages} />;
+  }
+
+  let removePagesButton: ReactNode = null;
+  if (hasRemovePagesButton) {
+    removePagesButton = (
+      <RemovePagesButton
+        disabled={removePagesDisabled}
+        pageCountToRemove={pageCountToRemove}
+        onRemovePages={onRemovePages}
+      />
+    );
   }
 
   return (
@@ -64,6 +114,7 @@ function BinderPageFrame({
         pageNumber={getPageNumber(binder.pageIds, pageId)}
       />
       {addPagesStrip}
+      {removePagesButton}
     </div>
   );
 }
@@ -71,25 +122,27 @@ function BinderPageFrame({
 // A representation of an open binder, meaning it may hold one page and one empty space
 // (if it's the first or last page), or two pages
 //
-// Pages are only added at the end of the binder, so the button that adds them is next to the last page, and only there
+// Pages are only added and removed at the end of the binder, so the buttons for that are on the last page, and only there
 // while that page is open. In a two-page layout, when the last page is on its own on the left, the empty half of the
-// spread is where the next page would go, so the button fills it as a page-sized ghost that adds 2 pages, like a
+// spread is where the next page would go, so the add button fills it as a page-sized ghost that adds 2 pages, like a
 // physical binder sheet. Otherwise (the one-page layout, or a last spread that is full) it is a strip beside the page,
-// adding one.
+// adding one. The remove button, in the corner of the last page, is disabled when that would leave fewer than MIN_PAGE_COUNT pages.
 export function BinderSpreadView({
   binder,
   spread,
   twoPageLayout,
   isFirstSpread,
-  addPagesDisabled,
+  pageChangesDisabled,
   onAddPages,
+  onRemovePages,
 }: {
   binder: BinderRecord;
   spread: BinderSpread;
   twoPageLayout: boolean;
   isFirstSpread: boolean;
-  addPagesDisabled: boolean;
+  pageChangesDisabled: boolean;
   onAddPages: (pageCount: number) => void;
+  onRemovePages: (pageCount: number) => void;
 }) {
   // In a two-page layout the first spread is the one with the binder's first page alone on the right, so a single page
   // on any other spread is the last page, on the left.
@@ -97,8 +150,12 @@ export function BinderSpreadView({
 
   let addPagesGhost: ReactNode = null;
   if (endIsGhost) {
-    addPagesGhost = <AddPagesButton shape="ghost" disabled={addPagesDisabled} pageCountToAdd={2} onAddPages={onAddPages} />;
+    addPagesGhost = <AddPagesButton shape="ghost" disabled={pageChangesDisabled} pageCountToAdd={2} onAddPages={onAddPages} />;
   }
+
+  // Change here if we want to allow multi-page removal, representative of taking a physical sheet out of a binder
+  const pageCountToRemove = 1;
+  const removePagesDisabled = pageChangesDisabled || binder.pageIds.length - pageCountToRemove < MIN_PAGE_COUNT;
 
   let spreadClass = "binder-spread";
   if (twoPageLayout) {
@@ -119,8 +176,12 @@ export function BinderSpreadView({
           binder={binder}
           pageId={pageId}
           hasAddPagesStrip={pageId === lastPageId && !endIsGhost}
-          addPagesDisabled={addPagesDisabled}
+          hasRemovePagesButton={pageId === lastPageId}
+          addPagesDisabled={pageChangesDisabled}
+          removePagesDisabled={removePagesDisabled}
+          pageCountToRemove={pageCountToRemove}
           onAddPages={onAddPages}
+          onRemovePages={onRemovePages}
         />
       ))}
       {addPagesGhost}

@@ -10,6 +10,7 @@ import {
   loadBindersFromDatabase,
   placeCardInSlotInDatabase,
   removeCardFromBinderInDatabase,
+  removeLastPageFromBinderInDatabase,
   renameBinderInDatabase,
 } from "./bindersDb";
 import type { BinderCardRecord, BinderRecord, BinderSaveResult, SlotPlacement } from "./bindersDb";
@@ -58,8 +59,8 @@ async function loadBindersState(): Promise<BindersState> {
 }
 
 // Components should only ever read through useLiveBinders, and change binders and their cards through the functions
-// below (createBinder, renameBinder, deleteBinder, addPageToBinder, addCardToBinder, addListToBinder,
-// removeCardFromBinder, placeCardInSlot, clearCardPlacement, detachCardFromList).
+// below (createBinder, renameBinder, deleteBinder, addPageToBinder, removeLastPageFromBinder, addCardToBinder,
+// addListToBinder, removeCardFromBinder, placeCardInSlot, clearCardPlacement, detachCardFromList).
 const bindersStore = createMemoryStore<BindersState>({
   name: "binders",
   initialState: makeState("loading", null, [], []),
@@ -161,6 +162,21 @@ export function addPageToBinder(binderId: string): Promise<BinderSaveResult> {
   return bindersStore.enqueueChange("Couldn't add page to binder", async () => {
     const binder = await addPageToBinderInDatabase(binderId);
     applyBinder(binder);
+    bindersStore.notifyOtherTabs();
+    return SAVED_WITHOUT_RECORD;
+  });
+}
+
+// Removes the last page of the binder (never going below the minimum number of pages, see MIN_PAGE_COUNT). The cards
+// that were in its slots stay in the binder, unplaced. The change shows up once it has been saved.
+export function removeLastPageFromBinder(binderId: string): Promise<BinderSaveResult> {
+  return bindersStore.enqueueChange("Couldn't remove page from binder", async () => {
+    const removal = await removeLastPageFromBinderInDatabase(binderId);
+    // The cards go first, so memory never has a card placed on a page that is gone.
+    if (removal.unplacedCards.length > 0) {
+      applyCards(removal.unplacedCards);
+    }
+    applyBinder(removal.binder);
     bindersStore.notifyOtherTabs();
     return SAVED_WITHOUT_RECORD;
   });
