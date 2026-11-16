@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
 import { ListEntryTile } from "../components/ListEntryTile";
 import { ListMeta } from "../components/ListMeta";
-import { buildFoundPrintingsById, joinEntriesWithMasterData } from "../data/listEntries";
+import { buildFoundPrintingsById, joinRecordsWithMasterData } from "../data/foundPrintings";
 import { canChangeLists, getListEntries, useLiveLists } from "../data/lists";
 import type { ListEntryRecord, ListRecord } from "../data/listsDb";
 import { loadMasterData } from "../data/masterData";
@@ -25,7 +25,7 @@ function ListContents({
   // Built once per data load, not per change to the list.
   const foundPrintingsById = useMemo(() => buildFoundPrintingsById(data), [data]);
   const tiles = useMemo(
-    () => joinEntriesWithMasterData(entries, foundPrintingsById),
+    () => joinRecordsWithMasterData(entries, foundPrintingsById),
     [entries, foundPrintingsById],
   );
 
@@ -36,7 +36,7 @@ function ListContents({
   return (
     <ul className="tile-grid tile-grid-cards">
       {tiles.map((tile) => (
-        <li key={`${tile.entry.printingId}-${tile.entry.edition}`}>
+        <li key={`${tile.record.printingId}-${tile.record.edition}`}>
           <ListEntryTile listEntry={tile} backLabel={list.name} changesDisabled={changesDisabled} />
         </li>
       ))}

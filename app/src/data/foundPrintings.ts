@@ -1,7 +1,6 @@
 import { setNumberCollator, titleCollator } from "./collators";
 import { indexBy } from "./recordGroupingHelpers";
-import type { ListEntryRecord } from "./listsDb";
-import type { Card, CardSet, MasterData, Printing, SetCode } from "./types";
+import type { Card, CardSet, Edition, MasterData, Printing, SetCode } from "./types";
 
 // A printing from the master data, together with the records it belongs to.
 export interface FoundPrinting {
@@ -11,10 +10,18 @@ export interface FoundPrinting {
   set: CardSet;
 }
 
-// A list entry as the list page shows it. `found` is null when the master data has no such printing (for example
-// after the data was rebuilt without it), so the entry can still be shown, and removed.
-export interface ListEntry {
-  entry: ListEntryRecord;
+// What a record needs to be shown as a printing: a list entry and a binder card both point at one specific printing +
+// edition.
+export interface PrintingEditionKey {
+  printingId: string;
+  edition: Edition;
+}
+
+// A record as a page shows it (a list entry on a list, a card in a binder's pool). `found` is null when the master data
+// has no such printing (for example after the data was rebuilt without it), so the record can still be shown, and
+// removed.
+export interface RecordWithFoundPrinting<R extends PrintingEditionKey> {
+  record: R;
   found: FoundPrinting | null;
 }
 
@@ -30,7 +37,7 @@ export function buildFoundPrintingsById(data: MasterData): Map<string, FoundPrin
     const set = setsById.get(setcode.set_id);
     if (card === undefined || set === undefined) {
       console.warn(
-        `Setcode "${setcode.setcode_id}" points at a card or set that isn't in the data; its printings can't be shown on lists`,
+        `Setcode "${setcode.setcode_id}" points at a card or set that isn't in the data; its printings can't be shown on lists or in binders`,
       );
       continue;
     }
@@ -41,12 +48,12 @@ export function buildFoundPrintingsById(data: MasterData): Map<string, FoundPrin
   return foundPrintingsById;
 }
 
-function compareEntryKeys(a: ListEntryRecord, b: ListEntryRecord): number {
+function compareKeys(a: PrintingEditionKey, b: PrintingEditionKey): number {
   return titleCollator.compare(a.printingId, b.printingId) || titleCollator.compare(a.edition, b.edition);
 }
 
-// By card title, then set number. Entries the master data doesn't know go last.
-function compareRows(a: ListEntry, b: ListEntry): number {
+// By card title, then set number. Records the master data doesn't know go last.
+function compareRows<R extends PrintingEditionKey>(a: RecordWithFoundPrinting<R>, b: RecordWithFoundPrinting<R>): number {
   if (a.found === null || b.found === null) {
     if (a.found !== null) {
       return -1;
@@ -54,21 +61,22 @@ function compareRows(a: ListEntry, b: ListEntry): number {
     if (b.found !== null) {
       return 1;
     }
-    return compareEntryKeys(a.entry, b.entry);
+    return compareKeys(a.record, b.record);
   }
   return (
     titleCollator.compare(a.found.card.title, b.found.card.title) ||
     setNumberCollator.compare(a.found.setcode.set_number, b.found.setcode.set_number) ||
-    compareEntryKeys(a.entry, b.entry)
+    compareKeys(a.record, b.record)
   );
 }
 
-// Joins list entries to the master data (by printing id) and sorts them for showing. Returns a new array.
-export function joinEntriesWithMasterData(
-  entries: readonly ListEntryRecord[],
+// Joins records to the master data (by printing id) and sorts them for showing. Returns a new array. Records that
+// compare equal (copies of the same printing + edition) keep the order they were given in.
+export function joinRecordsWithMasterData<R extends PrintingEditionKey>(
+  records: readonly R[],
   foundPrintingsById: ReadonlyMap<string, FoundPrinting>,
-): ListEntry[] {
-  return entries
-    .map((entry): ListEntry => ({ entry, found: foundPrintingsById.get(entry.printingId) ?? null }))
+): RecordWithFoundPrinting<R>[] {
+  return records
+    .map((record): RecordWithFoundPrinting<R> => ({ record, found: foundPrintingsById.get(record.printingId) ?? null }))
     .sort(compareRows);
 }

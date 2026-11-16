@@ -761,19 +761,19 @@ a {
   opacity: 0.8;
 }
 
-.list-entry {
+.tile-with-remove {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   height: 100%; /* entries in the same row end up the same height */
 }
 
-.list-entry > .tile {
+.tile-with-remove > .tile {
   flex: 1;
   height: auto;
 }
 
-.list-entry .action-button {
+.tile-with-remove .action-button {
   width: 100%;
 }
 

@@ -1,10 +1,13 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { editionLabel } from "../data/editions";
-import type { ListEntry } from "../data/listEntries";
+import type { RecordWithFoundPrinting } from "../data/foundPrintings";
 import { changeEntryQuantity } from "../data/lists";
 import { OWNED_LIST_ID } from "../data/listsDb";
-import { getVerifiedArtworks, printingName } from "../data/printings";
+import type { ListEntryRecord } from "../data/listsDb";
+import { getVerifiedArtworks } from "../data/printings";
+import { MissingPrintingTile } from "./MissingPrintingTile";
+import { PrintingTileMeta } from "./PrintingTileMeta";
 import { TileLink } from "./TileLink";
 
 // One entry of a list: the specific printing and edition as a tile, with a button under it that removes the entry
@@ -14,11 +17,11 @@ export function ListEntryTile({
   backLabel,
   changesDisabled,
 }: {
-  listEntry: ListEntry;
+  listEntry: RecordWithFoundPrinting<ListEntryRecord>;
   backLabel: string;
   changesDisabled: boolean;
 }) {
-  const { entry, found } = listEntry;
+  const { record: entry, found } = listEntry;
   const [removing, setRemoving] = useState(false);
 
   const editionText = editionLabel(entry.edition);
@@ -43,46 +46,23 @@ export function ListEntryTile({
 
   let tile: ReactNode;
   if (found === null) {
-    tile = (
-      <div className="tile tile-missing">
-        <div className="tile-body">
-          <div className="tile-title">Not in the card data</div>
-          <div className="tile-meta">
-            <span className="muted">{entry.printingId}</span>
-          </div>
-          <div className="tile-meta">
-            <span className="muted">{editionText}</span>
-            {quantityTag}
-          </div>
-        </div>
-      </div>
-    );
+    tile = <MissingPrintingTile printingId={entry.printingId} edition={entry.edition} extraTag={quantityTag} />;
   } else {
-    const { printing, setcode, card, set } = found;
     tile = (
       <TileLink
-        to={`/printings/${setcode.setcode_id}`}
+        to={`/printings/${found.setcode.setcode_id}`}
         backLabel={backLabel}
-        card={card}
-        artworks={getVerifiedArtworks([printing])}
-        hasUnverifiedPrinting={!printing.verified}
+        card={found.card}
+        artworks={getVerifiedArtworks([found.printing])}
+        hasUnverifiedPrinting={!found.printing.verified}
       >
-        <div className="tile-meta">
-          {setcode.set_number_synthetic ? null : <span className="tag">{setcode.set_number}</span>}
-          <span className="tag">{set.region}</span>
-        </div>
-        <div className="tile-meta">
-          <span className="muted">
-            {printingName(printing, setcode.printings)} · {editionText}
-          </span>
-          {quantityTag}
-        </div>
+        <PrintingTileMeta found={found} edition={entry.edition} extraTag={quantityTag} />
       </TileLink>
     );
   }
 
   return (
-    <div className="list-entry">
+    <div className="tile-with-remove">
       {tile}
       <button
         className="action-button"
