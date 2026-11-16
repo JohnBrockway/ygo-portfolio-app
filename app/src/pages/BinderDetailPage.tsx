@@ -125,35 +125,41 @@ function BinderContents({
     await changePagesOneByOne(pageCount, () => removeLastPageFromBinder(binder.id));
   }
 
+  // The pages and the pool panes are both direct children of .binder-detail, which splits the
+  // room under the title between them (see index.css). The nav stays in view under the pages while the pages scroll.
   return (
     <>
-      <BinderSpreadView
-        binder={binder}
-        spread={spread}
-        twoPageLayout={twoPageLayout}
-        isFirstSpread={spreadIndex === 0}
-        pageChangesDisabled={changesDisabled || changingPages}
-        onAddPages={handleAddPages}
-        onRemovePages={handleRemovePages}
-      />
-      <div className="binder-nav">
-        <button
-          className="action-button"
-          type="button"
-          disabled={previousSpread === undefined}
-          onClick={() => showSpread(previousSpread)}
-        >
-          Previous
-        </button>
-        <span className="muted">{describeSpread(binder, spread)}</span>
-        <button
-          className="action-button"
-          type="button"
-          disabled={nextSpread === undefined}
-          onClick={() => showSpread(nextSpread)}
-        >
-          Next
-        </button>
+      <div className="binder-pages-pane">
+        <div className="binder-pages-scroll">
+          <BinderSpreadView
+            binder={binder}
+            spread={spread}
+            twoPageLayout={twoPageLayout}
+            isFirstSpread={spreadIndex === 0}
+            pageChangesDisabled={changesDisabled || changingPages}
+            onAddPages={handleAddPages}
+            onRemovePages={handleRemovePages}
+          />
+        </div>
+        <div className="binder-nav">
+          <button
+            className="action-button"
+            type="button"
+            disabled={previousSpread === undefined}
+            onClick={() => showSpread(previousSpread)}
+          >
+            Previous
+          </button>
+          <span className="muted">{describeSpread(binder, spread)}</span>
+          <button
+            className="action-button"
+            type="button"
+            disabled={nextSpread === undefined}
+            onClick={() => showSpread(nextSpread)}
+          >
+            Next
+          </button>
+        </div>
       </div>
       <BinderPool
         binderId={binder.id}
@@ -198,11 +204,11 @@ export function BinderDetailPage() {
   }
 
   return (
-    <>
+    <div className="binder-detail">
       <p>
         <BackLink fallbackTo="/binders" fallbackLabel="Binders" />
       </p>
       {content}
-    </>
+    </div>
   );
 }
