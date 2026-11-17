@@ -51,5 +51,13 @@ export function useFilterParams() {
   };
 }
 
+// The address of the Cards page with this text already in its search bar, for pages that
+// have no filters of their own and only send people there.
+export function buildCardSearchPath(query: string): string {
+  const params = new URLSearchParams();
+  params.set(QUERY_PARAM, query);
+  return `/cards?${params.toString()}`;
+}
+
 // Everything useFilterParams returns, for components that are handed it.
 export type FilterParams = ReturnType<typeof useFilterParams>;

@@ -13,6 +13,7 @@ import { matchesAllTokens, matchesSetNumberAndTitle, splitQuery } from "../data/
 import type { Card, CardSet, MasterData, SetCode } from "../data/types";
 import { useFilterParams } from "../data/useFilterParams";
 import { useLoadOnMount } from "../data/useLoadOnMount";
+import { CARD_SEARCH_LABEL } from "../data/cardSearchLabel";
 
 // A setcode prepared for searching, with the card it belongs to (needed to show its tile).
 type SearchableSetCode = {
@@ -242,7 +243,7 @@ function CardSearch({ data }: { data: MasterData }) {
 
   return (
     <>
-      <FilterBar filters={filters} searchLabel="Search by card name or set number" games={games} regions={regions} />
+      <FilterBar filters={filters} searchLabel={CARD_SEARCH_LABEL} games={games} regions={regions} />
       {results}
     </>
   );
@@ -263,7 +264,6 @@ export function CardsPage() {
   return (
     <>
       <h1>Cards</h1>
-      <p className="muted">Search for a card by name, or for a printing by set number.</p>
       {content}
     </>
   );

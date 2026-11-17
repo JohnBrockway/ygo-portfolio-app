@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
+import { GoToCardSearchBar } from "../components/GoToCardSearchBar";
 import { SetCodeTile } from "../components/SetCodeTile";
 import { setNumberCollator } from "../data/collators";
 import { getAvailableImages } from "../data/images";
@@ -157,11 +158,12 @@ export function CardDetailPage() {
     content = <CardPrintings key={cardId} data={data} cardId={cardId} />;
   }
 
-  return (
+   return (
     <>
       <p>
         <BackLink fallbackTo="/cards" fallbackLabel="Cards" />
       </p>
+      <GoToCardSearchBar />
       {content}
     </>
   );

@@ -18,7 +18,7 @@ export default function App() {
       <Routes>
         {/* Every page renders inside AppShell (navigation + content area). */}
         <Route element={<AppShell />}>
-          <Route path="/" element={<Navigate to="/sets" replace />} />
+          <Route path="/" element={<Navigate to="/cards" replace />} />
           <Route path="/sets" element={<SetsPage />} />
           <Route path="/sets/:setId" element={<SetDetailPage />} />
           <Route path="/cards" element={<CardsPage />} />

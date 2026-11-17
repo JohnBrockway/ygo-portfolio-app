@@ -1,0 +1,1 @@
+export const CARD_SEARCH_LABEL = "Search all cards by name or set number";
