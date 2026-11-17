@@ -17,6 +17,7 @@ import {
 import type { BinderCardRecord, BinderRecord, BinderSaveResult } from "../data/bindersDb";
 import { findSpreadIndex, getBinderSpreads, getPageNumber } from "../data/binderSpreads";
 import type { BinderSpread } from "../data/binderSpreads";
+import { formatCount } from "../data/formatCount";
 import { buildFoundPrintingsById, joinRecordsWithMasterData } from "../data/foundPrintings";
 import { loadMasterData } from "../data/masterData";
 import type { MasterData } from "../data/types";
@@ -135,7 +136,7 @@ function BinderContents({
     await changePagesOneByOne(pageCount, () => removeLastPageFromBinder(binder.id));
   }
 
-  // Tapping a pool tile picks that card up; tapping the picked up card again puts it down.
+  // Tapping a pool card picks that card up; tapping the picked up card again puts it down.
   function handleToggleCardSelection(cardId: string) {
     setSelectedCardId(cardId === selectedCardId ? null : cardId);
   }
@@ -247,7 +248,10 @@ export function BinderDetailPage() {
     const cards = getBinderCards(bindersState, binder.id);
     content = (
       <>
-        <h1>{binder.name}</h1>
+        <h1>
+          {binder.name}
+          <span className="muted binder-title-count"> · {formatCount(cards.length, "card", "cards")} in binder</span>
+        </h1>
         {/* The key starts the page view over (back at the first page, nothing picked up) when the address changes to another binder. */}
         <BinderContents key={binder.id} binder={binder} cards={cards} data={data} changesDisabled={changesDisabled} />
       </>

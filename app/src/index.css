@@ -613,6 +613,13 @@ a {
   }
 }
 
+/* The count after the binder's name in the page title (see BinderDetailPage): it is part of the h1 but not as big or
+   bold as the name. The colour is .muted's. */
+.binder-title-count {
+  font-size: 1rem;
+  font-weight: normal;
+}
+
 /* The top pane: the pages scroll, the Previous / Next bar under them stays in view. */
 
 .binder-pages-pane {
@@ -876,6 +883,11 @@ a {
   padding: var(--binder-pool-padding-top) 1rem 1rem;
   overflow-y: auto;
   border-top: 1px solid var(--border);
+}
+
+.binder-pool-title {
+  margin: 0;
+  font-size: 1.25rem;
 }
 
 .binder-pool-lists {

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import type { BinderCardWithPrinting } from "../data/binderPlacements";
 import type { BinderRecord } from "../data/bindersDb";
-import { formatCount } from "../data/formatCount";
 import { AddListButtons } from "./AddListButtons";
 import { BinderPoolCard } from "./BinderPoolCard";
 import { BinderSelectionBar } from "./BinderSelectionBar";
@@ -53,10 +52,6 @@ export function BinderPool({
 
   return (
     <section className="binder-pool">
-      <div className="row-meta">
-        <span>{formatCount(unplacedCardTiles.length, "card", "cards")} unplaced</span>
-        <span>{formatCount(cardTiles.length, "card", "cards")} in binder</span>
-      </div>
       <AddListButtons binderId={binder.id} changesDisabled={changesDisabled} />
       <BinderSelectionBar
         binder={binder}
