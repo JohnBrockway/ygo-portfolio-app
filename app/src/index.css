@@ -723,6 +723,135 @@ a {
   font-size: 0.75rem;
 }
 
+/* A slot is a cell (its size and frame, above) with a button filling it (see BinderSlot). The button holds the slot's
+   number while it is empty, or the placed card's image. */
+.binder-slot-button {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-width: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-radius: inherit;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.binder-slot-button:disabled {
+  cursor: default;
+}
+
+.binder-slot-button:enabled:hover,
+.binder-slot-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* A slot with a card: the image fills it, clipped to the rounded corners. */
+.binder-slot-filled {
+  overflow: hidden;
+  border-style: solid;
+}
+
+/* The slot whose card is picked up. */
+.binder-slot-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* Compact card (see BinderCardCompact): the image of a card's printing with a caption over the bottom of it, naming the
+   card and giving its set number. It fills the width it is put in (a binder slot, a card pool card) and is as tall as a
+   card image. The caption's text size follows that width (font-size in cqw, the card's own width), and so does how much
+   of it shows, in steps (the widths are in rem because a container query can't use a custom property):
+   - narrower than 7rem: the name on one line, cut short, and the set number;
+   - from 7rem: the name on up to two lines;
+   - from 11rem: also the printing and edition. */
+
+.compact-card {
+  position: relative;
+  container-type: inline-size;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.compact-card-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.compact-card-caption {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 0.25em 0.375em;
+  background: rgba(20, 22, 26, 0.85);
+  font-size: clamp(0.5rem, 8cqw, 1rem);
+  line-height: 1.25;
+  text-align: left;
+}
+
+.compact-card-name,
+.compact-card-set-number,
+.compact-card-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-card-name {
+  font-weight: 600;
+}
+
+.compact-card-set-number,
+.compact-card-detail {
+  color: var(--text-muted);
+}
+
+.compact-card-detail {
+  display: none;
+}
+
+@container (min-width: 7rem) {
+  .compact-card-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+  }
+}
+
+@container (min-width: 11rem) {
+  .compact-card-detail {
+    display: block;
+  }
+}
+
+/* A card whose printing isn't in the master data (see MissingPrintingTile for the tile version). */
+.compact-card-missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  color: var(--danger);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
 .binder-nav {
   display: flex;
   flex-wrap: wrap;
@@ -733,22 +862,20 @@ a {
 }
 
 /* Binder page: the card pool, the bottom pane under the pages. The whole section scrolls (its title and buttons with
-   its tiles). Its tiles are the same ones the lists show (a tile-grid of tiles, each with a remove button on its
-   corner), and the side padding leaves room for the part of that button that sticks out past a tile's right edge, which
-   the scrolling would otherwise cut off. */
+   its cards). Its cards are compact cards in a tile-grid (see BinderPoolCard), each with a remove button on its corner,
+   and the side padding leaves room for the part of that button that sticks out past a card's right edge, which the
+   scrolling would otherwise cut off. */
 
 .binder-pool {
+  /* Its own variable because the selection bar below has to cancel it out (see .binder-selection-bar). */
+  --binder-pool-padding-top: 0.75rem;
+
   flex: 1 1 0;
   min-height: 0;
   margin-top: 0.5rem;
-  padding: 0.75rem 1rem 1rem;
+  padding: var(--binder-pool-padding-top) 1rem 1rem;
   overflow-y: auto;
   border-top: 1px solid var(--border);
-}
-
-.binder-pool-title {
-  margin: 0;
-  font-size: 1.25rem;
 }
 
 .binder-pool-lists {
@@ -757,6 +884,88 @@ a {
   align-items: center;
   gap: 0.5rem;
   margin: 0.5rem 0 0;
+}
+
+/* A card in the pool (see BinderPoolCard): the compact card as a button, with the frame of a filled slot. It fills the
+   list item it is in, whose width is the tile-grid's. */
+.binder-pool-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  appearance: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: inherit;
+  font: inherit;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.binder-pool-card:hover,
+.binder-pool-card:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* The card that is picked up: the accent border is doubled up with a ring, so it stands out from a hovered card. */
+.binder-pool-card-selected,
+.binder-pool-card-selected:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* The selection bar (see BinderSelectionBar): stays at the top of the pool pane while the cards scroll under it, so the
+   buttons are in reach however far down the picked up card is. A fixed height, so the cards don't move when a card is
+   picked up. The negative margins and matching padding make it as wide as the pane, which is what covers the part of the
+   cards' corner buttons that sticks out at the sides. Above those buttons (z-index 10). */
+.binder-selection-bar {
+  position: sticky;
+  /* Sticky offsets are measured from inside the pool's padding, so without this the bar would stop that far below the
+     top of the pane, with the cards showing in the gap. */
+  top: calc(-1 * var(--binder-pool-padding-top));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  height: 3.5rem;
+  margin: 0.5rem -1rem 0;
+  padding: 0 1rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.binder-selection-info {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.875rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.binder-selection-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.binder-selection-card-name {
+  font-weight: 600;
+}
+
+.binder-selection-hint {
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.binder-selection-actions {
+  display: flex;
+  flex: none;
+  gap: 0.5rem;
 }
 
 /* Tile image made of several images stacked like a pile of cards (see TileStack). It reuses the .tile-image box;

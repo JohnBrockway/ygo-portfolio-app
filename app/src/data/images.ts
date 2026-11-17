@@ -1,5 +1,6 @@
 import { DATA_BASE_URL } from "../config";
-import type { Card, CardImage, CardSet } from "./types";
+import { getVerifiedArtworks } from "./printings";
+import type { Card, CardImage, CardSet, Printing } from "./types";
 
 const SET_IMAGE_BASE = `${DATA_BASE_URL}/images/sets/`;
 const CARD_IMAGE_BASE = `${DATA_BASE_URL}/images/cards/`;
@@ -69,4 +70,12 @@ export function getTileImageUrls(card: Card, artworks: string[]): string[] {
 
   const defaultUrl = getDefaultImageUrl(card);
   return defaultUrl === null ? [] : [defaultUrl];
+}
+
+// The URL of the one image a single printing shows: its artwork if it is verified and the card has an image for it,
+// otherwise the card's default image. null (show the placeholder) if the card has no images at all. A printing has one
+// artwork, unlike a set's tile, which stacks the artworks of several (see getTileImageUrls, which this goes through so
+// the rule for which artwork counts stays in one place).
+export function getPrintingImageUrl(card: Card, printing: Printing): string | null {
+  return getTileImageUrls(card, getVerifiedArtworks([printing]))[0] ?? null;
 }

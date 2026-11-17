@@ -4,18 +4,20 @@ import { useParams } from "react-router-dom";
 import { BackLink } from "../components/BackLink";
 import { BinderPool } from "../components/BinderPool";
 import { BinderSpreadView } from "../components/BinderSpreadView";
+import { getPlacedCardsOnPage, groupPlacedCardsByPage } from "../data/binderPlacements";
 import {
   addPageToBinder,
   canChangeBinders,
   getBinderCards,
   getBinders,
+  placeCardInSlot,
   removeLastPageFromBinder,
   useLiveBinders,
 } from "../data/binders";
 import type { BinderCardRecord, BinderRecord, BinderSaveResult } from "../data/bindersDb";
 import { findSpreadIndex, getBinderSpreads, getPageNumber } from "../data/binderSpreads";
 import type { BinderSpread } from "../data/binderSpreads";
-import { buildFoundPrintingsById } from "../data/foundPrintings";
+import { buildFoundPrintingsById, joinRecordsWithMasterData } from "../data/foundPrintings";
 import { loadMasterData } from "../data/masterData";
 import type { MasterData } from "../data/types";
 import { useLiveMediaQuery } from "../data/useLiveMediaQuery";
@@ -51,8 +53,16 @@ function BinderContents({
   // page.
   const [viewedPageId, setViewedPageId] = useState<string | null>(null);
   const [changingPages, setChangingPages] = useState(false);
+  // The card that is picked up, by id: tapped in the pool or in a slot, and meant to be put in a slot next. null while
+  // nothing is picked up. What counts is the card that has this id now (see selectedCard), so an id of a card that has
+  // gone (removed here, or in another tab) is the same as no selection.
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   // Built once per data load, not per change to the binder.
   const foundPrintingsById = useMemo(() => buildFoundPrintingsById(data), [data]);
+  // Both panes need the cards with their printings: the pool shows all of them, the pages the ones in slots.
+  const cardTiles = useMemo(() => joinRecordsWithMasterData(cards, foundPrintingsById), [cards, foundPrintingsById]);
+  const placedCardsByPageId = useMemo(() => groupPlacedCardsByPage(cardTiles), [cardTiles]);
+  const selectedCard = cardTiles.find((tile) => tile.record.id === selectedCardId) ?? null;
 
   const spreads = getBinderSpreads(binder.pageIds, twoPageLayout);
   const spreadIndex = findSpreadIndex(spreads, viewedPageId);
@@ -125,6 +135,41 @@ function BinderContents({
     await changePagesOneByOne(pageCount, () => removeLastPageFromBinder(binder.id));
   }
 
+  // Tapping a pool tile picks that card up; tapping the picked up card again puts it down.
+  function handleToggleCardSelection(cardId: string) {
+    setSelectedCardId(cardId === selectedCardId ? null : cardId);
+  }
+
+  function handleClearSelection() {
+    setSelectedCardId(null);
+  }
+
+  // What a tap on a slot does (the page grid only offers the taps that do something):
+  // - nothing is picked up: picks up the card in the slot;
+  // - the slot holds the picked up card: puts it down;
+  // - otherwise: puts the picked up card in the slot. A card that was in the slot changes places with it, or goes back to
+  //   the pool if the picked up card came from the pool (see placeCardInSlot).
+  async function handleSlotClick(pageId: string, slotIndex: number) {
+    const cardInSlot = getPlacedCardsOnPage(placedCardsByPageId, pageId).get(slotIndex);
+
+    if (selectedCard === null) {
+      if (cardInSlot !== undefined) {
+        setSelectedCardId(cardInSlot.record.id);
+      }
+      return;
+    }
+    if (cardInSlot !== undefined && cardInSlot.record.id === selectedCard.record.id) {
+      setSelectedCardId(null);
+      return;
+    }
+
+    const result = await placeCardInSlot(selectedCard.record.id, { pageId, slotIndex });
+    // After a failure the card stays picked up, and the banner explains.
+    if (result.status === "saved") {
+      setSelectedCardId(null);
+    }
+  }
+
   // The pages and the pool panes are both direct children of .binder-detail, which splits the
   // room under the title between them (see index.css). The nav stays in view under the pages while the pages scroll.
   return (
@@ -136,7 +181,11 @@ function BinderContents({
             spread={spread}
             twoPageLayout={twoPageLayout}
             isFirstSpread={spreadIndex === 0}
+            placedCardsByPageId={placedCardsByPageId}
+            selectedCard={selectedCard}
+            slotChangesDisabled={changesDisabled}
             pageChangesDisabled={changesDisabled || changingPages}
+            onSlotClick={handleSlotClick}
             onAddPages={handleAddPages}
             onRemovePages={handleRemovePages}
           />
@@ -162,10 +211,12 @@ function BinderContents({
         </div>
       </div>
       <BinderPool
-        binderId={binder.id}
-        cards={cards}
-        foundPrintingsById={foundPrintingsById}
+        binder={binder}
+        cardTiles={cardTiles}
+        selectedCard={selectedCard}
         changesDisabled={changesDisabled}
+        onToggleCardSelection={handleToggleCardSelection}
+        onClearSelection={handleClearSelection}
       />
     </>
   );
@@ -197,7 +248,7 @@ export function BinderDetailPage() {
     content = (
       <>
         <h1>{binder.name}</h1>
-        {/* The key starts the page view over (back at the first page) when the address changes to another binder. */}
+        {/* The key starts the page view over (back at the first page, nothing picked up) when the address changes to another binder. */}
         <BinderContents key={binder.id} binder={binder} cards={cards} data={data} changesDisabled={changesDisabled} />
       </>
     );

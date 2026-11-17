@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { getPlacedCardsOnPage } from "../data/binderPlacements";
+import type { BinderCardWithPrinting, PlacedCardsByPageId } from "../data/binderPlacements";
 import { MIN_PAGE_COUNT } from "../data/bindersDb";
 import type { BinderRecord } from "../data/bindersDb";
 import { getPageNumber } from "../data/binderSpreads";
@@ -20,7 +22,7 @@ function AddPagesButton({
 }: {
   shape: AddPagesButtonShape;
   disabled: boolean;
-  pageCountToAdd: number
+  pageCountToAdd: number;
   onAddPages: (pageCount: number) => void;
 }) {
   const label = "Add a page at the end of the binder";
@@ -62,21 +64,29 @@ function RemovePagesButton({
 function BinderPageFrame({
   binder,
   pageId,
+  placedCardsByPageId,
+  selectedCard,
+  slotChangesDisabled,
   hasAddPagesStrip,
   hasRemovePagesButton,
   addPagesDisabled,
   removePagesDisabled,
   pageCountToRemove,
+  onSlotClick,
   onAddPages,
   onRemovePages,
 }: {
   binder: BinderRecord;
   pageId: string;
+  placedCardsByPageId: PlacedCardsByPageId;
+  selectedCard: BinderCardWithPrinting | null;
+  slotChangesDisabled: boolean;
   hasAddPagesStrip: boolean;
   hasRemovePagesButton: boolean;
   addPagesDisabled: boolean;
   removePagesDisabled: boolean;
   pageCountToRemove: number;
+  onSlotClick: (pageId: string, slotIndex: number) => void;
   onAddPages: (pageCount: number) => void;
   onRemovePages: (pageCount: number) => void;
 }) {
@@ -102,6 +112,10 @@ function BinderPageFrame({
         columns={binder.columns}
         rows={binder.rows}
         pageNumber={getPageNumber(binder.pageIds, pageId)}
+        placedCards={getPlacedCardsOnPage(placedCardsByPageId, pageId)}
+        selectedCard={selectedCard}
+        slotChangesDisabled={slotChangesDisabled}
+        onSlotClick={(slotIndex) => onSlotClick(pageId, slotIndex)}
       />
       {addPagesStrip}
       {removePagesButton}
@@ -110,19 +124,27 @@ function BinderPageFrame({
 }
 
 // A representation of an open binder, meaning it may hold one page and one empty space
-// (if it's the first or last page), or two pages
+// (if it's the first or last page), or two pages. Each page shows the cards placed in its slots; what a tap on a slot
+// does is up to the caller (onSlotClick).
 //
 // Pages are only added and removed at the end of the binder, so the buttons for that are on the last page, and only there
 // while that page is open. In a two-page layout, when the last page is on its own on the left, the empty half of the
 // spread is where the next page would go, so the add button fills it as a page-sized ghost that adds 2 pages, like a
 // physical binder sheet. Otherwise (the one-page layout, or a last spread that is full) it is a strip beside the page,
 // adding one. The remove button, in the corner of the last page, is disabled when that would leave fewer than MIN_PAGE_COUNT pages.
+//
+// Two flags say what is not possible right now: pageChangesDisabled for adding and removing pages (it also covers a page
+// change that is still being saved), slotChangesDisabled for changing the cards in the slots.
 export function BinderSpreadView({
   binder,
   spread,
   twoPageLayout,
   isFirstSpread,
+  placedCardsByPageId,
+  selectedCard,
+  slotChangesDisabled,
   pageChangesDisabled,
+  onSlotClick,
   onAddPages,
   onRemovePages,
 }: {
@@ -130,7 +152,11 @@ export function BinderSpreadView({
   spread: BinderSpread;
   twoPageLayout: boolean;
   isFirstSpread: boolean;
+  placedCardsByPageId: PlacedCardsByPageId;
+  selectedCard: BinderCardWithPrinting | null;
+  slotChangesDisabled: boolean;
   pageChangesDisabled: boolean;
+  onSlotClick: (pageId: string, slotIndex: number) => void;
   onAddPages: (pageCount: number) => void;
   onRemovePages: (pageCount: number) => void;
 }) {
@@ -165,11 +191,15 @@ export function BinderSpreadView({
           key={pageId}
           binder={binder}
           pageId={pageId}
+          placedCardsByPageId={placedCardsByPageId}
+          selectedCard={selectedCard}
+          slotChangesDisabled={slotChangesDisabled}
           hasAddPagesStrip={pageId === lastPageId && !endIsGhost}
           hasRemovePagesButton={pageId === lastPageId}
           addPagesDisabled={pageChangesDisabled}
           removePagesDisabled={removePagesDisabled}
           pageCountToRemove={pageCountToRemove}
+          onSlotClick={onSlotClick}
           onAddPages={onAddPages}
           onRemovePages={onRemovePages}
         />
