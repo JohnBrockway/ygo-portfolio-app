@@ -664,7 +664,7 @@ a {
   --binder-strip-gap: 1rem;
 
   display: flex;
-  flex: 3 1 0;
+  flex: 2 1 0;
   align-items: center;
   justify-content: center;
   gap: var(--binder-strip-gap);
@@ -950,19 +950,16 @@ a {
   text-align: center;
 }
 
-/* Binder page: the card pool, the bottom pane under the pages. The whole section scrolls (its title and buttons with
-   its cards). Its cards are compact cards in a tile-grid (see BinderPoolCard), each with a remove button on its corner,
-   and the side padding leaves room for the part of that button that sticks out past a card's right edge, which the
-   scrolling would otherwise cut off. */
+/* Binder page: the card pool, the bottom pane under the pages. The whole section scrolls (the toolbar with its cards).
+   Its cards are compact cards in a tile-grid (see BinderPoolCard), each with a remove button on its corner, and the side
+   padding leaves room for the part of that button that sticks out past a card's right edge, which the scrolling would
+   otherwise cut off. */
 
 .binder-pool {
-  /* Its own variable because the selection bar below has to cancel it out (see .binder-selection-bar). */
-  --binder-pool-padding-top: 0.75rem;
-
   flex: 1 1 0;
   min-height: 0;
   margin-top: 0.5rem;
-  padding: var(--binder-pool-padding-top) 1rem 1rem;
+  padding: 0 1rem 1rem;
   overflow-y: auto;
   border-top: 1px solid var(--border);
 }
@@ -972,12 +969,56 @@ a {
   font-size: 1.25rem;
 }
 
-.binder-pool-lists {
+/* The toolbar at the top of the pool pane (see BinderPool), sticky on scroll. On a narrow screen the selection bar wraps
+   onto a row of its own (its flex-basis, not its content, decides that, so the toolbar doesn't change height when a card
+   is picked up). */
+.binder-pool-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0 -1rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+/* The add list control (see AddListButtons): the dropdown of lists and the Add button after it. */
+.binder-add-list {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
   gap: 0.5rem;
-  margin: 0.5rem 0 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.binder-add-list-select {
+  flex: 0 1 12rem;
+  min-width: 0;
+  height: 2rem;
+  padding: 0 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.binder-add-list-select:hover,
+.binder-add-list-select:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.binder-add-list-select:disabled {
+  border-color: var(--border);
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* A card in the pool (see BinderPoolCard): the compact card as a button, with the frame of a filled slot. It fills the
@@ -1009,25 +1050,17 @@ a {
   box-shadow: 0 0 0 2px var(--accent);
 }
 
-/* The selection bar (see BinderSelectionBar): stays at the top of the pool pane while the cards scroll under it, so the
-   buttons are in reach however far down the picked up card is. A fixed height, so the cards don't move when a card is
-   picked up. The negative margins and matching padding make it as wide as the pane, which is what covers the part of the
-   cards' corner buttons that sticks out at the sides. Above those buttons (z-index 10). */
+/* The selection bar (see BinderSelectionBar): the part of the pool toolbar that says which card is picked up, with the
+   buttons for it. It takes the room the add list control leaves, or a row of its own when that is less than its
+   flex-basis. A fixed height, so that the toolbar doesn't change when a card is picked up. */
 .binder-selection-bar {
-  position: sticky;
-  /* Sticky offsets are measured from inside the pool's padding, so without this the bar would stop that far below the
-     top of the pane, with the cards showing in the gap. */
-  top: calc(-1 * var(--binder-pool-padding-top));
-  z-index: 20;
   display: flex;
+  flex: 1 1 18rem;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  height: 3.5rem;
-  margin: 0.5rem -1rem 0;
-  padding: 0 1rem;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  min-width: 0;
+  height: 2.75rem;
 }
 
 .binder-selection-info {

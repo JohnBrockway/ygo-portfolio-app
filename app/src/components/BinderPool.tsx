@@ -5,10 +5,11 @@ import { AddListButtons } from "./AddListButtons";
 import { BinderPoolCard } from "./BinderPoolCard";
 import { BinderSelectionBar } from "./BinderSelectionBar";
 
-// The card pool of a binder, as the user sees it: the cards that are not in a slot, as compact cards, with the buttons
-// that add cards. (Every card of the binder is in the pool as far as the data goes, placed or not; a placed card is shown
-// in its slot instead.) Tapping a card picks it up; the bar above the cards says which card is picked up (also one that
-// is picked up from a slot) and stays in view while the pool scrolls.
+// The card pool of a binder, as the user sees it: the cards that are not in a slot, as compact cards, under a toolbar with
+// the control that adds cards from a list and the bar that says which card is picked up. (Every card of the binder is in
+// the pool as far as the data goes, placed or not; a placed card is shown in its slot instead.) Tapping a card picks it
+// up; the selection bar names the picked up card (also one that is picked up from a slot). The toolbar is one row (it
+// wraps on a narrow screen) and stays in view while the pool scrolls.
 export function BinderPool({
   binder,
   cardTiles,
@@ -52,13 +53,15 @@ export function BinderPool({
 
   return (
     <section className="binder-pool">
-      <AddListButtons binderId={binder.id} changesDisabled={changesDisabled} />
-      <BinderSelectionBar
-        binder={binder}
-        selectedCard={selectedCard}
-        changesDisabled={changesDisabled}
-        onClearSelection={onClearSelection}
-      />
+      <div className="binder-pool-toolbar">
+        <AddListButtons binderId={binder.id} changesDisabled={changesDisabled} />
+        <BinderSelectionBar
+          binder={binder}
+          selectedCard={selectedCard}
+          changesDisabled={changesDisabled}
+          onClearSelection={onClearSelection}
+        />
+      </div>
       {contents}
     </section>
   );
