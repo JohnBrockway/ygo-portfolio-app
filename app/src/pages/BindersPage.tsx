@@ -44,6 +44,7 @@ function BinderSummaryRow({
       name={binder.name}
       meta={<BinderMeta binder={binder} cards={cards} />}
       openTo={`/binders/${binder.id}`}
+      builtIn={false}
       editable={true}
       changesDisabled={changesDisabled}
       deleteConsequence="Its layout is lost, but your lists are not affected."

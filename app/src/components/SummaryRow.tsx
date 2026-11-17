@@ -12,6 +12,7 @@ type SummaryRowProps = {
   // The line of details under the name.
   meta: ReactNode;
   openTo: string;
+  builtIn: boolean;
   // False for a row that can be opened but not renamed or deleted (the built-in lists).
   editable: boolean;
   changesDisabled: boolean;
@@ -27,6 +28,7 @@ export function SummaryRow({
   name,
   meta,
   openTo,
+  builtIn,
   editable,
   changesDisabled,
   deleteConsequence,
@@ -67,6 +69,7 @@ export function SummaryRow({
   return (
     <div className="row">
       <div className="row-title">{name}</div>
+      {builtIn ? <span className="tag">Built-in</span> : null}
       {meta}
       <div className="row-actions">
         <Link

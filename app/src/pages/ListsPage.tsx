@@ -20,6 +20,7 @@ function ListSummaryRow({
       name={list.name}
       meta={<ListMeta list={list} entries={entries} />}
       openTo={`/lists/${list.id}`}
+      builtIn={list.builtIn}
       editable={!list.builtIn}
       changesDisabled={changesDisabled}
       deleteConsequence="Will not affect card status on any other list."

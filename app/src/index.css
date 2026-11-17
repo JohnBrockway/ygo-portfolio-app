@@ -629,8 +629,9 @@ a {
   text-align: center;
 }
 
-/* Binder page, whole screen: 2 scrolling panes within, page itself does not scroll. The panes are direct children of this, and
-   share the room left under the title 2 : 1 (see .binder-pages-pane and .binder-pool). The height is the viewport minus the padding
+/* Binder page, whole screen: 2 panes within, the page itself does not scroll. The panes are direct children of this, and
+   share the room left under the title 3 : 1 (see .binder-pages-pane and .binder-pool). The pages pane fits its pages into
+   its height and does not scroll; the pool pane scrolls. The height is the viewport minus the padding
    of .content, and on a phone also minus the navigation bar along the bottom. An error banner above (see AppShell) is not counted,
    so while one is shown the page scrolls a little. */
 
@@ -653,40 +654,75 @@ a {
   font-weight: normal;
 }
 
-/* The top pane: the pages scroll, the Previous / Next bar under them stays in view. */
+/* The top pane: the previous button, the open pages and the next button side by side, centred in the pane both ways.
+
+   The pane is a size container, so that the pages can be sized from its height (see .binder-spread), and its padding keeps
+   them off the edges of the pane. It does not scroll. */
 
 .binder-pages-pane {
-  display: flex;
-  flex: 2 1 0;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.binder-pages-scroll {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: auto;
-}
-
-/* Binder page: what is open at once (a spread) is one page, or two side by side on a wide screen. A page is a grid of
-   slots, whose columns come from the binder (set inline by BinderPageGrid). The spread has the same room on both sides,
-   so the pages stay centred; the narrow "add pages" strip beside the last page of the binder (see BinderSpreadView)
-   uses the room on the right, whether or not it is shown. */
-
-.binder-spread {
   --binder-strip-width: 2.5rem;
   --binder-strip-gap: 1rem;
 
-  display: grid;
-  grid-template-columns: minmax(0, 28rem);
+  display: flex;
+  flex: 3 1 0;
+  align-items: center;
   justify-content: center;
+  gap: var(--binder-strip-gap);
+  min-height: 0;
+  padding: 1rem 0;
+  container-type: size;
+}
+
+/* The previous and next buttons (see BinderSpreadStepButton). With no page further in that direction the button is
+   hidden, but it keeps its room, so the pages don't move. */
+.binder-step-button {
+  flex: none;
+  width: var(--binder-strip-width);
+}
+
+.binder-step-button-hidden {
+  visibility: hidden;
+}
+
+/* Binder page: what is open at once (a spread) is one page, or two side by side on a wide screen. A page is a grid of
+   slots, whose columns come from the binder (set inline by BinderPageGrid). The spread is only as wide as its pages, and
+   the pane centres it between the step buttons, so the pages stay centered. The narrow "add pages" strip beside the last
+   page of the binder (see BinderSpreadView) sticks out of the right of the spread, over the place of the next button.
+   The page numbers use the room at the sides too.
+
+   A page is at most 28rem wide, and no wider than lets all its rows fit in the height of .binder-pages-pane (100cqh). The
+   height is worked out backwards: take the pane's height off what a page is made of besides its slots (the gaps between
+   them, and the padding and border around them), split what is left between the rows to get a slot's height, make that
+   3 / 4 as wide (a slot's shape), and add the page's extra width back on. BinderSpreadView sets --binder-columns and
+   --binder-rows on the spread for this. The page frame's measurements are variables so that .binder-page and this
+   sum can't disagree. */
+
+.binder-spread {
+  --binder-page-gap: 0.5rem;
+  --binder-page-padding: 0.5rem;
+  --binder-page-border-width: 1px;
+
+  --binder-page-extra-width: calc(
+    (var(--binder-columns) - 1) * var(--binder-page-gap) + 2 * (var(--binder-page-padding) + var(--binder-page-border-width))
+  );
+  --binder-page-extra-height: calc(
+    (var(--binder-rows) - 1) * var(--binder-page-gap) + 2 * (var(--binder-page-padding) + var(--binder-page-border-width))
+  );
+  --binder-page-width-to-fit-height: calc(
+    var(--binder-columns) * ((100cqh - var(--binder-page-extra-height)) / var(--binder-rows)) * 3 / 4 +
+      var(--binder-page-extra-width)
+  );
+  --binder-page-max-width: min(28rem, var(--binder-page-width-to-fit-height));
+
+  display: grid;
+  flex: 0 1 auto;
+  min-width: 0;
+  grid-template-columns: minmax(0, var(--binder-page-max-width));
   gap: 1rem;
-  margin: 1rem 0;
-  padding: 0 calc(var(--binder-strip-width) + var(--binder-strip-gap));
 }
 
 .binder-spread-two {
-  grid-template-columns: repeat(2, minmax(0, 28rem));
+  grid-template-columns: repeat(2, minmax(0, var(--binder-page-max-width)));
 }
 
 /* The first spread has a single page, which sits on the right (the left column stays empty). */
@@ -696,6 +732,28 @@ a {
 
 .binder-page-frame {
   position: relative;
+}
+
+/* A page's number, beside the bottom outer corner of the page (see getPageNumberSide in BinderSpreadView). The colour is
+   .muted's. On the right of a page that has the add pages strip beside it, the number moves out past the strip. */
+.binder-page-number {
+  position: absolute;
+  bottom: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.binder-page-number-left {
+  right: calc(100% + 0.5rem);
+}
+
+.binder-page-number-right {
+  left: calc(100% + 0.5rem);
+}
+
+/* After .binder-page-number-right, because it replaces its left. */
+.binder-page-number-past-strip {
+  left: calc(100% + var(--binder-strip-gap) + var(--binder-strip-width) + 0.5rem);
 }
 
 /* The button that adds pages at the end of the binder: a dashed outline with a plus in it, in one of two shapes (see
@@ -742,12 +800,12 @@ a {
 
 .binder-page {
   display: grid;
-  gap: 0.5rem;
+  gap: var(--binder-page-gap);
   margin: 0;
-  padding: 0.5rem;
+  padding: var(--binder-page-padding);
   list-style: none;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: var(--binder-page-border-width) solid var(--border);
   border-radius: 0.5rem;
 }
 
@@ -890,15 +948,6 @@ a {
   font-size: 0.75rem;
   overflow-wrap: anywhere;
   text-align: center;
-}
-
-.binder-nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
 }
 
 /* Binder page: the card pool, the bottom pane under the pages. The whole section scrolls (its title and buttons with

@@ -10,7 +10,6 @@ export function ListMeta({ list, entries }: { list: ListRecord; entries: readonl
     <div className="row-meta">
       <span>{formatCount(entries.length, "card", "cards")}</span>
       {list.id === OWNED_LIST_ID ? <span>{`(${nonDedupedCount} including duplicates)`}</span> : null}
-      {list.builtIn ? <span className="tag">Built-in</span> : null}
     </div>
   );
 }

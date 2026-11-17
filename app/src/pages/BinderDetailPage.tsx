@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { BinderPool } from "../components/BinderPool";
+import { BinderSpreadStepButton } from "../components/BinderSpreadStepButton";
 import { BinderSpreadView } from "../components/BinderSpreadView";
 import { getPlacedCardsOnPage, groupPlacedCardsByPage } from "../data/binderPlacements";
 import {
@@ -14,7 +15,7 @@ import {
   useLiveBinders,
 } from "../data/binders";
 import type { BinderCardRecord, BinderRecord, BinderSaveResult } from "../data/bindersDb";
-import { findSpreadIndex, getBinderSpreads, getPageNumber } from "../data/binderSpreads";
+import { findSpreadIndex, getBinderSpreads } from "../data/binderSpreads";
 import type { BinderSpread } from "../data/binderSpreads";
 import { formatCount } from "../data/formatCount";
 import { buildFoundPrintingsById, joinRecordsWithMasterData } from "../data/foundPrintings";
@@ -25,16 +26,6 @@ import { useLoadOnMount } from "../data/useLoadOnMount";
 
 // From this screen width two pages fit side by side; below it the binder is shown a page at a time.
 const TWO_PAGE_LAYOUT_QUERY = "(min-width: 1000px)";
-
-// Which pages are open, e.g. "Pages 2–3 of 4".
-function describeSpread(binder: BinderRecord, spread: BinderSpread): string {
-  const firstPageNumber = getPageNumber(binder.pageIds, spread[0]);
-  const pageCount = binder.pageIds.length;
-  if (spread.length === 2) {
-    return `Pages ${firstPageNumber}–${firstPageNumber + 1} of ${pageCount}`;
-  }
-  return `Page ${firstPageNumber} of ${pageCount}`;
-}
 
 function BinderContents({
   binder,
@@ -171,44 +162,34 @@ function BinderContents({
   }
 
   // The pages and the pool panes are both direct children of .binder-detail, which splits the
-  // room under the title between them (see index.css). The nav stays in view under the pages while the pages scroll.
+  // room under the title between them (see index.css). The top pane holds the open pages with the previous and next
+  // buttons on either side of them, centred vertically; the pages are sized to fit its height, so it doesn't scroll.
   return (
     <>
       <div className="binder-pages-pane">
-        <div className="binder-pages-scroll">
-          <BinderSpreadView
-            binder={binder}
-            spread={spread}
-            twoPageLayout={twoPageLayout}
-            isFirstSpread={spreadIndex === 0}
-            placedCardsByPageId={placedCardsByPageId}
-            selectedCard={selectedCard}
-            slotChangesDisabled={changesDisabled}
-            pageChangesDisabled={changesDisabled || changingPages}
-            onSlotClick={handleSlotClick}
-            onAddPages={handleAddPages}
-            onRemovePages={handleRemovePages}
-          />
-        </div>
-        <div className="binder-nav">
-          <button
-            className="action-button"
-            type="button"
-            disabled={previousSpread === undefined}
-            onClick={() => showSpread(previousSpread)}
-          >
-            Previous
-          </button>
-          <span className="muted">{describeSpread(binder, spread)}</span>
-          <button
-            className="action-button"
-            type="button"
-            disabled={nextSpread === undefined}
-            onClick={() => showSpread(nextSpread)}
-          >
-            Next
-          </button>
-        </div>
+        <BinderSpreadStepButton
+          direction="previous"
+          disabled={previousSpread === undefined}
+          onClick={() => showSpread(previousSpread)}
+        />
+        <BinderSpreadView
+          binder={binder}
+          spread={spread}
+          twoPageLayout={twoPageLayout}
+          isFirstSpread={spreadIndex === 0}
+          placedCardsByPageId={placedCardsByPageId}
+          selectedCard={selectedCard}
+          slotChangesDisabled={changesDisabled}
+          pageChangesDisabled={changesDisabled || changingPages}
+          onSlotClick={handleSlotClick}
+          onAddPages={handleAddPages}
+          onRemovePages={handleRemovePages}
+        />
+        <BinderSpreadStepButton
+          direction="next"
+          disabled={nextSpread === undefined}
+          onClick={() => showSpread(nextSpread)}
+        />
       </div>
       <BinderPool
         binder={binder}
@@ -249,7 +230,8 @@ export function BinderDetailPage() {
       <>
         <h1>
           {binder.name}
-          <span className="muted binder-title-count"> · {formatCount(cards.length, "card", "cards")} in binder</span>
+          <span className="muted binder-title-count"> · {formatCount(cards.length, "card", "cards")}</span>
+          <span className="muted binder-title-count"> · {formatCount(binder.pageIds.length, "page", "pages")}</span>
         </h1>
         {/* The key starts the page view over (back at the first page, nothing picked up) when the address changes to another binder. */}
         <BinderContents key={binder.id} binder={binder} cards={cards} data={data} changesDisabled={changesDisabled} />

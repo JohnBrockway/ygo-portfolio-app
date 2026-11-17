@@ -1,5 +1,21 @@
 import { Icon } from "./Icon";
 
+export function ChevronLeftIcon() {
+  return (
+    <Icon>
+      <polyline points="15 18 9 12 15 6" />
+    </Icon>
+  );
+}
+
+export function ChevronRightIcon() {
+  return (
+    <Icon>
+      <polyline points="9 18 15 12 9 6" />
+    </Icon>
+  );
+}
+
 export function PencilIcon() {
   return (
     <Icon>

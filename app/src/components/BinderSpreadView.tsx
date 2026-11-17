@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { getPlacedCardsOnPage } from "../data/binderPlacements";
 import type { BinderCardWithPrinting, PlacedCardsByPageId } from "../data/binderPlacements";
 import { MIN_PAGE_COUNT } from "../data/bindersDb";
@@ -59,11 +59,28 @@ function RemovePagesButton({
   return <CornerRemoveButton label={label} disabled={disabled} onClick={() => onRemovePages(pageCountToRemove)} />;
 }
 
-// One page, with the narrow add pages strip beside it and the remove pages button on its corner if it is asked to have
-// them.
+// Which side of its page the page's number is on.
+type PageNumberSide = "left" | "right";
+
+// The number of a page is on the outer side of it, at the bottom, like in a printed book: in a two-page layout a left page
+// has it on its left and a right page on its right. The binder's first page is alone on the right of the opening spread,
+// and any other page that is alone is the last one, on the left. In the one-page layout it is always on the left.
+function getPageNumberSide(twoPageLayout: boolean, isFirstSpread: boolean, indexInSpread: number): PageNumberSide {
+  if (!twoPageLayout) {
+    return "left";
+  }
+  if (isFirstSpread || indexInSpread === 1) {
+    return "right";
+  }
+  return "left";
+}
+
+// One page, with its number beside the bottom corner, and the narrow add pages strip beside it and the remove pages
+// button on its corner if it is asked to have them.
 function BinderPageFrame({
   binder,
   pageId,
+  pageNumberSide,
   placedCardsByPageId,
   selectedCard,
   slotChangesDisabled,
@@ -78,6 +95,7 @@ function BinderPageFrame({
 }: {
   binder: BinderRecord;
   pageId: string;
+  pageNumberSide: PageNumberSide;
   placedCardsByPageId: PlacedCardsByPageId;
   selectedCard: BinderCardWithPrinting | null;
   slotChangesDisabled: boolean;
@@ -90,6 +108,15 @@ function BinderPageFrame({
   onAddPages: (pageCount: number) => void;
   onRemovePages: (pageCount: number) => void;
 }) {
+  const pageNumber = getPageNumber(binder.pageIds, pageId);
+
+  // The strip is on the right of the page, in the room where a number on the right would go, so that number moves out past
+  // the strip.
+  let pageNumberClass = `muted binder-page-number binder-page-number-${pageNumberSide}`;
+  if (pageNumberSide === "right" && hasAddPagesStrip) {
+    pageNumberClass += " binder-page-number-past-strip";
+  }
+
   let addPagesStrip: ReactNode = null;
   if (hasAddPagesStrip) {
     addPagesStrip = <AddPagesButton shape="strip" disabled={addPagesDisabled} pageCountToAdd={1} onAddPages={onAddPages} />;
@@ -111,12 +138,15 @@ function BinderPageFrame({
       <BinderPageGrid
         columns={binder.columns}
         rows={binder.rows}
-        pageNumber={getPageNumber(binder.pageIds, pageId)}
+        pageNumber={pageNumber}
         placedCards={getPlacedCardsOnPage(placedCardsByPageId, pageId)}
         selectedCard={selectedCard}
         slotChangesDisabled={slotChangesDisabled}
         onSlotClick={(slotIndex) => onSlotClick(pageId, slotIndex)}
       />
+      <span className={pageNumberClass} aria-hidden="true">
+        {pageNumber}
+      </span>
       {addPagesStrip}
       {removePagesButton}
     </div>
@@ -125,7 +155,10 @@ function BinderPageFrame({
 
 // A representation of an open binder, meaning it may hold one page and one empty space
 // (if it's the first or last page), or two pages. Each page shows the cards placed in its slots; what a tap on a slot
-// does is up to the caller (onSlotClick).
+// does is up to the caller (onSlotClick). The previous and next buttons beside the spread are the caller's too.
+//
+// The pages are sized to fit the height of the pane the spread is in, as well as its width (see .binder-spread in
+// index.css, which is why the binder's columns and rows are set as custom properties on the spread).
 //
 // Pages are only added and removed at the end of the binder, so the buttons for that are on the last page, and only there
 // while that page is open. In a two-page layout, when the last page is on its own on the left, the empty half of the
@@ -181,16 +214,23 @@ export function BinderSpreadView({
     }
   }
 
+  // What the CSS needs to size the pages from the height they have (a custom property isn't part of CSSProperties).
+  const spreadStyle = {
+    "--binder-columns": binder.columns,
+    "--binder-rows": binder.rows,
+  } as CSSProperties;
+
   const lastPageId = binder.pageIds[binder.pageIds.length - 1];
   const pageIds: readonly string[] = spread;
 
   return (
-    <div className={spreadClass}>
-      {pageIds.map((pageId) => (
+    <div className={spreadClass} style={spreadStyle}>
+      {pageIds.map((pageId, indexInSpread) => (
         <BinderPageFrame
           key={pageId}
           binder={binder}
           pageId={pageId}
+          pageNumberSide={getPageNumberSide(twoPageLayout, isFirstSpread, indexInSpread)}
           placedCardsByPageId={placedCardsByPageId}
           selectedCard={selectedCard}
           slotChangesDisabled={slotChangesDisabled}
