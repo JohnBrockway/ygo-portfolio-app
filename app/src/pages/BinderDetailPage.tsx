@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
-import { BackLink } from "../components/BackLink";
 import { BinderPool } from "../components/BinderPool";
 import { BinderSpreadView } from "../components/BinderSpreadView";
 import { getPlacedCardsOnPage, groupPlacedCardsByPage } from "../data/binderPlacements";
@@ -260,9 +259,6 @@ export function BinderDetailPage() {
 
   return (
     <div className="binder-detail">
-      <p>
-        <BackLink fallbackTo="/binders" fallbackLabel="Binders" />
-      </p>
       {content}
     </div>
   );

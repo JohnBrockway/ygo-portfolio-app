@@ -1,23 +1,20 @@
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
-import { BackLink } from "../components/BackLink";
 import { ListEntryTile } from "../components/ListEntryTile";
 import { ListMeta } from "../components/ListMeta";
 import { buildFoundPrintingsById, joinRecordsWithMasterData } from "../data/foundPrintings";
 import { canChangeLists, getListEntries, useLiveLists } from "../data/lists";
-import type { ListEntryRecord, ListRecord } from "../data/listsDb";
+import type { ListEntryRecord } from "../data/listsDb";
 import { loadMasterData } from "../data/masterData";
 import type { MasterData } from "../data/types";
 import { useLoadOnMount } from "../data/useLoadOnMount";
 
 function ListContents({
-  list,
   entries,
   data,
   changesDisabled,
 }: {
-  list: ListRecord;
   entries: readonly ListEntryRecord[];
   data: MasterData;
   changesDisabled: boolean;
@@ -37,7 +34,7 @@ function ListContents({
     <ul className="tile-grid tile-grid-cards">
       {tiles.map((tile) => (
         <li key={`${tile.record.printingId}-${tile.record.edition}`}>
-          <ListEntryTile listEntry={tile} backLabel={list.name} changesDisabled={changesDisabled} />
+          <ListEntryTile listEntry={tile} changesDisabled={changesDisabled} />
         </li>
       ))}
     </ul>
@@ -71,16 +68,13 @@ export function ListDetailPage() {
       <>
         <h1>{list.name}</h1>
         <ListMeta list={list} entries={entries} />
-        <ListContents list={list} entries={entries} data={data} changesDisabled={changesDisabled} />
+        <ListContents entries={entries} data={data} changesDisabled={changesDisabled} />
       </>
     );
   }
 
   return (
     <>
-      <p>
-        <BackLink fallbackTo="/lists" fallbackLabel="Lists" />
-      </p>
       {content}
     </>
   );

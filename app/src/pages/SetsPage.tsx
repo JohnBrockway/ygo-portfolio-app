@@ -9,9 +9,6 @@ import { matchesAllTokens, splitQuery } from "../data/search";
 import { useFilterParams } from "../data/useFilterParams";
 import { useLoadOnMount } from "../data/useLoadOnMount";
 
-// This page's name in the Back links of the pages its tiles open.
-const BACK_LABEL = "set search";
-
 export function SetsPage() {
   const { data: sets, error } = useLoadOnMount(loadSets);
   const filters = useFilterParams();
@@ -54,7 +51,7 @@ export function SetsPage() {
       <ul className="tile-grid">
         {visibleSets.map((set) => (
           <li key={set.set_id}>
-            <SetTile set={set} backLabel={BACK_LABEL} />
+            <SetTile set={set} />
           </li>
         ))}
       </ul>

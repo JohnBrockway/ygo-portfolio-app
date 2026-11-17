@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import type { RecordSaveResult } from "../data/recordConventions";
 import { PencilIcon, TrashIcon } from "./ActionIcons";
-import { LinkWithReturnInfo } from "./LinkWithReturnInfo";
 import { NameForm } from "./NameForm";
 
 type SummaryRowProps = {
@@ -12,7 +12,6 @@ type SummaryRowProps = {
   // The line of details under the name.
   meta: ReactNode;
   openTo: string;
-  backLabel: string;
   // False for a row that can be opened but not renamed or deleted (the built-in lists).
   editable: boolean;
   changesDisabled: boolean;
@@ -28,7 +27,6 @@ export function SummaryRow({
   name,
   meta,
   openTo,
-  backLabel,
   editable,
   changesDisabled,
   deleteConsequence,
@@ -71,14 +69,13 @@ export function SummaryRow({
       <div className="row-title">{name}</div>
       {meta}
       <div className="row-actions">
-        <LinkWithReturnInfo
+        <Link
           to={openTo}
-          backLabel={backLabel}
           className="action-button open-button"
           title={`Open ${name}`}
         >
           Open
-        </LinkWithReturnInfo>
+        </Link>
         {editable ? (
           <>
             <button

@@ -15,8 +15,6 @@ import {
 import { MAX_GRID_SIZE, MIN_GRID_SIZE } from "../data/bindersDb";
 import type { BinderCardRecord, BinderRecord } from "../data/bindersDb";
 
-const BACK_LABEL = "binders";
-
 // What the grid boxes of a new binder start with (and go back to after a binder has been created).
 const DEFAULT_COLUMNS_TEXT = "3";
 const DEFAULT_ROWS_TEXT = "3";
@@ -46,7 +44,6 @@ function BinderSummaryRow({
       name={binder.name}
       meta={<BinderMeta binder={binder} cards={cards} />}
       openTo={`/binders/${binder.id}`}
-      backLabel={BACK_LABEL}
       editable={true}
       changesDisabled={changesDisabled}
       deleteConsequence="Its layout is lost, but your lists are not affected."

@@ -5,8 +5,6 @@ import { SummaryRow } from "../components/SummaryRow";
 import { canChangeLists, createList, deleteList, getListEntries, renameList, useLiveLists } from "../data/lists";
 import type { ListEntryRecord, ListRecord } from "../data/listsDb";
 
-const BACK_LABEL = "lists";
-
 function ListSummaryRow({
   list,
   entries,
@@ -22,7 +20,6 @@ function ListSummaryRow({
       name={list.name}
       meta={<ListMeta list={list} entries={entries} />}
       openTo={`/lists/${list.id}`}
-      backLabel={BACK_LABEL}
       editable={!list.builtIn}
       changesDisabled={changesDisabled}
       deleteConsequence="Will not affect card status on any other list."

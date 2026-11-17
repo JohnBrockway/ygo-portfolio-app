@@ -1,9 +1,7 @@
 import { Fragment, useState } from "react";
 import type { ReactNode } from "react";
-import { useParams } from "react-router-dom";
-import { BackLink } from "../components/BackLink";
+import { Link, useParams } from "react-router-dom";
 import { EditionCells } from "../components/EditionCells";
-import { LinkWithReturnInfo } from "../components/LinkWithReturnInfo";
 import { PrintingArt } from "../components/PrintingArt";
 import { PrintingEditor } from "../components/PrintingEditor";
 import { isEditModeOn } from "../data/editMode";
@@ -54,12 +52,6 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
   const setTitle = set === undefined ? setcode.set_id : set.title;
   const editions: Edition[] = set === undefined ? [] : set.editions;
   const editMode = isEditModeOn();
-  let returnLabel: string;
-  if (setcode.set_number_synthetic) {
-    returnLabel = card === undefined ? "printing" : card.title;
-  } else {
-    returnLabel = setcode.set_number;
-  }
 
   // Each printing as it currently stands (in edit mode, with its draft applied, added printings included).
   const printings = getWorkingPrintings(setcode.printings, setcode.setcode_id, drafts, pendingPrintings, editMode);
@@ -91,18 +83,18 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
         {card === undefined ? (
           cardTitle
         ) : (
-          <LinkWithReturnInfo to={`/cards/${card.card_id}`} backLabel={returnLabel}>
+          <Link to={`/cards/${card.card_id}`}>
             {cardTitle}
-          </LinkWithReturnInfo>
+          </Link>
         )}
       </h1>
       <p>
         {set === undefined ? (
           setTitle
         ) : (
-          <LinkWithReturnInfo to={`/sets/${set.set_id}`} backLabel={returnLabel}>
+          <Link to={`/sets/${set.set_id}`}>
             {setTitle}
-          </LinkWithReturnInfo>
+          </Link>
         )}
       </p>
       <div className="row-meta">
@@ -199,9 +191,6 @@ export function PrintingPage() {
 
   return (
     <>
-      <p>
-        <BackLink fallbackTo="/cards" fallbackLabel="Cards" />
-      </p>
       {content}
     </>
   );

@@ -26,9 +26,6 @@ type SearchableSetCode = {
 // Keeps the DOM small; the heading shows the full match count.
 const MAX_RESULTS = 50;
 
-// This page's name in the Back links of the pages its tiles open.
-const BACK_LABEL = "card search";
-
 // Callers pass a non-empty token list and cards already sorted by title.
 function findCardMatches(sortedCards: Card[], tokens: string[]): Card[] {
   const firstToken = tokens[0].toLowerCase();
@@ -227,13 +224,12 @@ function CardSearch({ data }: { data: MasterData }) {
                 card={card}
                 printingCount={printingCountsByCardId.get(card.card_id) ?? 0}
                 hasUnverifiedPrinting={cardIdsWithUnverifiedPrintings.has(card.card_id)}
-                backLabel={BACK_LABEL}
               />
             </li>
           ))}
           {shownSetcodes.map(({ setcode, card }) => (
             <li key={`setcode-${setcode.setcode_id}`}>
-              <SetCodeTile card={card} setcode={setcode} backLabel={BACK_LABEL} />
+              <SetCodeTile card={card} setcode={setcode} />
             </li>
           ))}
         </ul>

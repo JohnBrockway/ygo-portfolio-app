@@ -12,14 +12,12 @@ import { PrintingTileMeta } from "./PrintingTileMeta";
 import { TileLink } from "./TileLink";
 
 // One entry of a list: the specific printing and edition as a tile, with a button on its corner that removes the
-// entry from the list. backLabel is the name of the page this is shown on, for the Back link.
+// entry from the list.
 export function ListEntryTile({
   listEntry,
-  backLabel,
   changesDisabled,
 }: {
   listEntry: RecordWithFoundPrinting<ListEntryRecord>;
-  backLabel: string;
   changesDisabled: boolean;
 }) {
   const { record: entry, found } = listEntry;
@@ -52,7 +50,6 @@ export function ListEntryTile({
     tile = (
       <TileLink
         to={`/printings/${found.setcode.setcode_id}`}
-        backLabel={backLabel}
         card={found.card}
         artworks={getVerifiedArtworks([found.printing])}
         hasUnverifiedPrinting={!found.printing.verified}

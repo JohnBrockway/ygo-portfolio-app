@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
-import { BackLink } from "../components/BackLink";
 import { GoToCardSearchBar } from "../components/GoToCardSearchBar";
 import { SetCodeTile } from "../components/SetCodeTile";
 import { setNumberCollator } from "../data/collators";
@@ -127,7 +126,7 @@ function CardPrintings({ data, cardId }: { data: MasterData; cardId: string | un
       <ul className="tile-grid tile-grid-cards">
         {setcodes.map(({ setcode }) => (
           <li key={setcode.setcode_id}>
-            <SetCodeTile card={card} setcode={setcode} backLabel={card.title} />
+            <SetCodeTile card={card} setcode={setcode} />
           </li>
         ))}
       </ul>
@@ -160,9 +159,6 @@ export function CardDetailPage() {
 
    return (
     <>
-      <p>
-        <BackLink fallbackTo="/cards" fallbackLabel="Cards" />
-      </p>
       <GoToCardSearchBar />
       {content}
     </>

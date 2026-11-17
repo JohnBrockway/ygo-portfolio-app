@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
-import { BackLink } from "../components/BackLink";
 import { SetCodeTile } from "../components/SetCodeTile";
 import { SetMeta } from "../components/SetMeta";
 import { setNumberCollator } from "../data/collators";
@@ -46,7 +45,7 @@ function SetPrintings({ data, setId }: { data: MasterData; setId: string | undef
       <ul className="tile-grid tile-grid-cards">
         {setcodes.map(({ setcode, card }) => (
           <li key={setcode.setcode_id}>
-            <SetCodeTile card={card} setcode={setcode} backLabel={set.title} />
+            <SetCodeTile card={card} setcode={setcode} />
           </li>
         ))}
       </ul>
@@ -77,9 +76,6 @@ export function SetDetailPage() {
 
   return (
     <>
-      <p>
-        <BackLink fallbackTo="/sets" fallbackLabel="Sets" />
-      </p>
       {content}
     </>
   );
