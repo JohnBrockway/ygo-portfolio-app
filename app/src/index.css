@@ -11,10 +11,26 @@
   --tile-monster-bg: #3b3028;
   --tile-spell-bg: #1f3536;
   --tile-trap-bg: #302839;
+  --tile-synchro-bg: #50545a;
+  --tile-ritual-bg: #243d63;
+  --tile-xyz-bg: #0c0d0f;
+  --tile-fusion-bg: #3a2a5c;
+  --tile-link-bg: #1b2142;
+  --tile-pendulum-bg: linear-gradient(
+    to right,
+    var(--tile-monster-bg),
+    var(--tile-spell-bg)
+  );
 
   --tile-monster-tag-border: #8f7a62;
   --tile-spell-tag-border: #3f8588;
   --tile-trap-tag-border: #8a6aa8;
+  --tile-synchro-tag-border: #a9aeb5;
+  --tile-ritual-tag-border: #5a86c0;
+  --tile-xyz-tag-border: #6b717b;
+  --tile-fusion-tag-border: #8068c0;
+  --tile-link-tag-border: #5560a0;
+  --tile-pendulum-tag-border: #678075;
 
   --nav-height: 3.5rem;
   --sidebar-width: 12rem;
@@ -1026,6 +1042,30 @@ a {
   background: var(--tile-trap-bg);
 }
 
+.tile-synchro {
+  background: var(--tile-synchro-bg);
+}
+
+.tile-ritual {
+  background: var(--tile-ritual-bg);
+}
+
+.tile-xyz {
+  background: var(--tile-xyz-bg);
+}
+
+.tile-fusion {
+  background: var(--tile-fusion-bg);
+}
+
+.tile-link {
+  background: var(--tile-link-bg);
+}
+
+.tile-pendulum {
+  background: var(--tile-pendulum-bg);
+}
+
 .tile-monster .tag {
   border-color: var(--tile-monster-tag-border);
 }
@@ -1036,6 +1076,30 @@ a {
 
 .tile-trap .tag {
   border-color: var(--tile-trap-tag-border);
+}
+
+.tile-synchro .tag {
+  border-color: var(--tile-synchro-tag-border);
+}
+
+.tile-ritual .tag {
+  border-color: var(--tile-ritual-tag-border);
+}
+
+.tile-xyz .tag {
+  border-color: var(--tile-xyz-tag-border);
+}
+
+.tile-fusion .tag {
+  border-color: var(--tile-fusion-tag-border);
+}
+
+.tile-link .tag {
+  border-color: var(--tile-link-tag-border);
+}
+
+.tile-pendulum .tag {
+  border-color: var(--tile-pendulum-tag-border);
 }
 
 /* The image and the badge on it: the frame is what the badge is placed against. */
