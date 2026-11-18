@@ -664,7 +664,7 @@ a {
   --binder-strip-gap: 1rem;
 
   display: flex;
-  flex: 3 1 0;
+  flex: 2 1 0;
   align-items: center;
   justify-content: center;
   gap: var(--binder-strip-gap);
@@ -950,19 +950,14 @@ a {
   text-align: center;
 }
 
-/* Binder page: the card pool, the bottom pane under the pages. The whole section scrolls (the toolbar with its cards).
-   Its cards are compact cards in a tile-grid (see BinderPoolCard), each with a remove button on its corner, and the side
-   padding leaves room for the part of that button that sticks out past a card's right edge, which the scrolling would
-   otherwise cut off. */
+/* Binder page: the card pool, the bottom pane under the pages. */
 
 .binder-pool {
+  display: flex;
   flex: 1 1 0;
+  flex-direction: column;
   min-height: 0;
   margin-top: 0.5rem;
-  /* No padding on top: the toolbar is the first thing in the pane, and any room above it would show only while the pane
-     is scrolled to the top (once it sticks, it sits flush against the top edge). */
-  padding: 0 1rem 1rem;
-  overflow-y: auto;
   border-top: 1px solid var(--border);
   /* So that the toolbar can change layout with the width of the pane (see .binder-pool-toolbar), not of the screen. */
   container-type: inline-size;
@@ -974,23 +969,28 @@ a {
 }
 
 /* The toolbar at the top of the pool pane (see BinderPool): the add list control and the main part (the name filter, or
-   the selection bar while a card is picked up) side by side on one row. It stays at the top of the pane while the cards
-   scroll under it, so the buttons are in reach however far down the picked up card is. On a narrow screen the main part
-   wraps onto a row of its own (its flex-basis, not its content, decides that, so the toolbar doesn't change height when a
-   card is picked up, and the cards don't move). The
-   negative margins and matching padding make it as wide as the pane, which is what covers the part of the cards' corner
-   buttons that sticks out at the sides. Above those buttons (z-index 10). */
+   the selection bar while a card is picked up). It is outside what scrolls, so the buttons are in reach however far down
+   the pool is scrolled. The two parts are side by side when the pane is wide enough (see the container query below),  and
+   stacked when it isn't. Which one it is depends on the width of the pane alone, not on the content, so the toolbar
+   doesn't change height when a card is picked up, and the cards don't move. */
 .binder-pool-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
   display: flex;
+  flex: none;
   flex-direction: column;
   gap: 0.5rem;
-  margin: 0 -1rem;
   padding: 0.5rem 1rem;
-  background: var(--bg);
   border-bottom: 1px solid var(--border);
+}
+
+/* The cards of the pool: the part of the pane that scrolls. Its cards are compact cards in a tile-grid (see
+   BinderPoolCard), each with a remove button on its corner, and the padding leaves room for the part of that button that
+   sticks out past a card's right edge, which the scrolling would otherwise cut off (the room above the first row is the
+   tile-grid's top margin). */
+.binder-pool-cards {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 0 1rem 1rem;
+  overflow-y: auto;
 }
 
 /* The add list control (see AddListButtons): the dropdown of lists and the Add button after it. */
@@ -1026,6 +1026,13 @@ a {
   border-color: var(--border);
   opacity: 0.4;
   cursor: default;
+}
+
+/* The pool's grid of cards: .tile-grid, with smaller cards than the tiles of the pages have (the pool holds many cards in
+   a short pane). It replaces the --tile-width that .tile-grid sets, on every screen width: being later in the file is what
+   makes it win over the wider screen rule inside .tile-grid's media query too. */
+.binder-pool-grid {
+  --tile-width: 9.5rem;
 }
 
 /* A card in the pool (see BinderPoolCard): the compact card as a button, with the frame of a filled slot. It fills the

@@ -10,7 +10,7 @@ import { BinderSelectionBar } from "./BinderSelectionBar";
 import { SearchBar } from "./SearchBar";
 
 // The card pool of a binder, as the user sees it: the cards that are not in a slot, as compact cards, under a toolbar. The
-// toolbar is one row (it wraps on a narrow screen) and stays in view while the pool scrolls. It has the control that adds
+// toolbar is one row (two on a narrow pane) and does not scroll; only the cards under it do. It has the control that adds
 // cards from a list, and beside it either the name filter (while nothing is picked up) or the bar that says which card is
 // picked up (also one that is picked up from a slot). (Every card of the binder is in the pool as far as the data goes,
 // placed or not; a placed card is shown in its slot instead.) Tapping a card picks it up.
@@ -50,7 +50,7 @@ export function BinderPool({
     contents = <p className="muted">No cards in the pool match this search.</p>;
   } else {
     contents = (
-      <ul className="tile-grid">
+      <ul className="tile-grid binder-pool-grid">
         {shownCardTiles.map((tile) => (
           <li key={tile.record.id}>
             <BinderPoolCard
@@ -85,7 +85,7 @@ export function BinderPool({
         <AddListButtons binderId={binder.id} changesDisabled={changesDisabled} />
         <div className="binder-pool-toolbar-main">{toolbarMain}</div>
       </div>
-      {contents}
+      <div className="binder-pool-cards">{contents}</div>
     </section>
   );
 }
