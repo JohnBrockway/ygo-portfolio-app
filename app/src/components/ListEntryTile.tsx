@@ -49,7 +49,14 @@ export function ListEntryTile({
 
   let tile: ReactNode;
   if (found === null) {
-    tile = <MissingPrintingTile printingId={entry.printingId} edition={entry.edition} extraTag={quantityTag} />;
+    tile = (
+      <MissingPrintingTile
+        printingId={entry.printingId}
+        edition={entry.edition}
+        extraTag={quantityTag}
+        ownership={ownership}
+      />
+    );
   } else {
     tile = (
       <TileLink
