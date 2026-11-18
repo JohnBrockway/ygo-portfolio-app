@@ -5,6 +5,7 @@ import {
   createListInDatabase,
   deleteListInDatabase,
   loadListsFromDatabase,
+  OWNED_LIST_ID,
   renameListInDatabase,
 } from "./listsDb";
 import type { ListEntryRecord, ListRecord, SaveResult } from "./listsDb";
@@ -26,6 +27,15 @@ export interface ListsState extends MemoryStoreState {
   // The active entries, grouped for lookups.
   byPrinting: ReadonlyMap<string, readonly ListEntryRecord[]>;
   byList: ReadonlyMap<string, readonly ListEntryRecord[]>;
+}
+
+// One edition of one printing, as held by the Owned list and by every other list. 
+export interface EntryOwnership {
+  // The quantity on the Owned list.
+  ownedQuantity: number;
+  // How many lists other than Owned hold the edition. Each of them holds at most 1 of it, so this is also how many
+  // copies those lists hold between them.
+  nonOwnedListCount: number;
 }
 
 function makeState(
@@ -83,12 +93,24 @@ export function getEntryQuantity(
   printingId: string,
   edition: Edition,
 ): number {
-  const entries = listsState.byPrinting.get(printingId);
-  if (entries === undefined) {
-    return 0;
-  }
+  const entries = getGroup(listsState.byPrinting, printingId);
   const entry = entries.find((candidate) => candidate.listId === listId && candidate.edition === edition);
   return entry === undefined ? 0 : entry.quantity;
+}
+
+// How many lists other than Owned hold this edition of this printing. There is at most one entry per list, printing and
+// edition, so counting the entries counts the lists.
+export function getNonOwnedListCount(listsState: ListsState, printingId: string, edition: Edition): number {
+  const entries = getGroup(listsState.byPrinting, printingId);
+  return entries.filter((entry) => entry.edition === edition && entry.listId !== OWNED_LIST_ID).length;
+}
+
+// What the Owned list and the other lists each hold of this edition of this printing, side by side.
+export function getEntryOwnership(listsState: ListsState, printingId: string, edition: Edition): EntryOwnership {
+  return {
+    ownedQuantity: getEntryQuantity(listsState, OWNED_LIST_ID, printingId, edition),
+    nonOwnedListCount: getNonOwnedListCount(listsState, printingId, edition),
+  };
 }
 
 // Every entry on the list (none removed), in no particular order.

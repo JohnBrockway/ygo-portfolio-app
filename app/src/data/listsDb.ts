@@ -9,7 +9,7 @@ import {
   getNextOrder,
   makeRecordId,
 } from "./recordConventions";
-import type { NameProblem, RecordSaveResult } from "./recordConventions";
+import type { RecordSaveResult } from "./recordConventions";
 import type { Edition } from "./types";
 
 // The database layer for lists. Only lists.ts may call the functions that change data (changeEntryQuantityInDatabase,
