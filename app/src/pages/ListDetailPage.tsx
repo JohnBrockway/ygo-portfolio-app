@@ -6,7 +6,9 @@ import { ListMeta } from "../components/ListMeta";
 import { SearchBar } from "../components/SearchBar";
 import { buildFoundPrintingsById, joinRecordsWithMasterData } from "../data/foundPrintings";
 import type { RecordWithFoundPrinting } from "../data/foundPrintings";
-import { canChangeLists, getListEntries, useLiveLists } from "../data/lists";
+import { canChangeLists, getEntryOwnership, getListEntries, useLiveLists } from "../data/lists";
+import type { EntryOwnership, ListsState } from "../data/lists";
+import { OWNED_LIST_ID } from "../data/listsDb";
 import type { ListEntryRecord } from "../data/listsDb";
 import { loadMasterData } from "../data/masterData";
 import { joinSearchTexts, matchesAllTokensInLowerText, splitQuery } from "../data/search";
@@ -33,15 +35,26 @@ function buildSearchableListTiles(tiles: readonly RecordWithFoundPrinting<ListEn
   });
 }
 
+// What the owned badge on a list entry's tile shows, or null where the tile has no badge. The Owned list has none: the
+// badge says how much of what the other lists want is owned, and on Owned the tile is the owned copies themselves.
+function getTileOwnership(listsState: ListsState, record: ListEntryRecord): EntryOwnership | null {
+  if (record.listId === OWNED_LIST_ID) {
+    return null;
+  }
+  return getEntryOwnership(listsState, record.printingId, record.edition);
+}
+
 // The entries of a list as tiles, under a filter bar. The filter text is plain state of this component (not in the
 // address bar); the caller keys this component by list so it starts empty again when another list is opened.
 function ListContents({
   entries,
   data,
+  listsState,
   changesDisabled,
 }: {
   entries: readonly ListEntryRecord[];
   data: MasterData;
+  listsState: ListsState;
   changesDisabled: boolean;
 }) {
   const [query, setQuery] = useState("");
@@ -72,7 +85,11 @@ function ListContents({
       <ul className="tile-grid tile-grid-cards">
         {matchingTiles.map((tile) => (
           <li key={`${tile.record.printingId}-${tile.record.edition}`}>
-            <ListEntryTile listEntry={tile} changesDisabled={changesDisabled} />
+            <ListEntryTile
+              listEntry={tile}
+              ownership={getTileOwnership(listsState, tile.record)}
+              changesDisabled={changesDisabled}
+            />
           </li>
         ))}
       </ul>
@@ -114,7 +131,13 @@ export function ListDetailPage() {
       <>
         <h1>{list.name}</h1>
         <ListMeta list={list} entries={entries} />
-        <ListContents key={list.id} entries={entries} data={data} changesDisabled={changesDisabled} />
+        <ListContents
+          key={list.id}
+          entries={entries}
+          data={data}
+          listsState={listsState}
+          changesDisabled={changesDisabled}
+        />
       </>
     );
   }

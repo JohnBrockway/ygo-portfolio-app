@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { editionLabel } from "../data/editions";
 import type { RecordWithFoundPrinting } from "../data/foundPrintings";
 import { changeEntryQuantity } from "../data/lists";
+import type { EntryOwnership } from "../data/lists";
 import { OWNED_LIST_ID } from "../data/listsDb";
 import type { ListEntryRecord } from "../data/listsDb";
 import { getVerifiedArtworks } from "../data/printings";
@@ -12,12 +13,15 @@ import { PrintingTileMeta } from "./PrintingTileMeta";
 import { TileLink } from "./TileLink";
 
 // One entry of a list: the specific printing and edition as a tile, with a button on its corner that removes the
-// entry from the list.
+// entry from the list. ownership is how much of the entry's printing and edition is owned, for the badge on the tile;
+// it is null where there is no badge.
 export function ListEntryTile({
   listEntry,
+  ownership,
   changesDisabled,
 }: {
   listEntry: RecordWithFoundPrinting<ListEntryRecord>;
+  ownership: EntryOwnership | null;
   changesDisabled: boolean;
 }) {
   const { record: entry, found } = listEntry;
@@ -53,6 +57,7 @@ export function ListEntryTile({
         card={found.card}
         artworks={getVerifiedArtworks([found.printing])}
         hasUnverifiedPrinting={!found.printing.verified}
+        ownership={ownership}
       >
         <PrintingTileMeta found={found} edition={entry.edition} extraTag={quantityTag} />
       </TileLink>

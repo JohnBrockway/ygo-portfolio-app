@@ -37,6 +37,10 @@
 
   --danger: #f7768e;
   --heart: #f7768e;
+
+  /* The owned badge on list tiles: green once owned, amber while there is nothing (or not enough) owned yet. */
+  --owned-complete: #9ece6a;
+  --owned-incomplete: #e0af68;
 }
 
 * {
@@ -1228,7 +1232,7 @@ a {
   border-color: var(--tile-pendulum-tag-border);
 }
 
-/* The image and the badge on it: the frame is what the badge is placed against. */
+/* The image and the badges on it: the frame is what the badges are placed against. */
 .tile-image-frame {
   position: relative;
 }
@@ -1250,6 +1254,36 @@ a {
   font-weight: 600;
   line-height: 1;
   opacity: 0.8;
+}
+
+/* By default a ring in the amber of "not owned (enough) yet", over the dark background the unverified badge has. */
+.tile-owned {
+  position: absolute;
+  right: 0.375rem;
+  bottom: 0.375rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  background: rgba(20, 22, 26, 0.9);
+  border: 2px solid var(--owned-incomplete);
+  border-radius: 50%;
+  color: var(--bg);
+  line-height: 1;
+}
+
+/* Everything owned: a solid green disc with the checkmark (the icon takes the colour of the text, set above) cut out of it. */
+.tile-owned-complete {
+  background: var(--owned-complete);
+  border-color: var(--owned-complete);
+}
+
+.tile-owned svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  stroke-width: 3;
 }
 
 .tile-missing,

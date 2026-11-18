@@ -1,5 +1,13 @@
 import { Icon } from "./Icon";
 
+export function CheckIcon() {
+  return (
+    <Icon>
+      <polyline points="20 6 9 17 4 12" />
+    </Icon>
+  );
+}
+
 export function ChevronLeftIcon() {
   return (
     <Icon>
