@@ -5,7 +5,7 @@ import { SetTile } from "../components/SetTile";
 import { getSetGames } from "../data/games";
 import { loadSets } from "../data/masterData";
 import { getRegions } from "../data/regions";
-import { matchesAllTokens, splitQuery } from "../data/search";
+import { matchesAllTokensInLowerText, splitQuery } from "../data/search";
 import { useFilterParams } from "../data/useFilterParams";
 import { useLoadOnMount } from "../data/useLoadOnMount";
 
@@ -29,7 +29,7 @@ export function SetsPage() {
         // A set spanning several games stays visible while any one of them is on.
         set.games.some((game) => !disabledGames.has(game)) &&
         !disabledRegions.has(set.region) &&
-        matchesAllTokens(set.title, tokens),
+        matchesAllTokensInLowerText(set.title.toLowerCase(), tokens),
     );
   }, [sets, tokens, disabledGames, disabledRegions]);
 

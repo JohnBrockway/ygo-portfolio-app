@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { getBinderCardName } from "../data/binderPlacements";
 import type { BinderCardWithPrinting } from "../data/binderPlacements";
 import type { BinderRecord } from "../data/bindersDb";
-import { matchesAllTokens, splitQuery } from "../data/search";
+import { matchesAllTokensInLowerText, splitQuery } from "../data/search";
 import { AddListButtons } from "./AddListButtons";
 import { BinderPoolCard } from "./BinderPoolCard";
 import { BinderSelectionBar } from "./BinderSelectionBar";
@@ -39,7 +39,9 @@ export function BinderPool({
   const nameTokens = useMemo(() => splitQuery(nameQuery), [nameQuery]);
 
   const unplacedCardTiles = cardTiles.filter((tile) => tile.record.placement === null);
-  const shownCardTiles = unplacedCardTiles.filter((tile) => matchesAllTokens(getBinderCardName(tile), nameTokens));
+  const shownCardTiles = unplacedCardTiles.filter((tile) =>
+    matchesAllTokensInLowerText(getBinderCardName(tile).toLowerCase(), nameTokens),
+  );
 
   let contents: ReactNode;
   if (cardTiles.length === 0) {

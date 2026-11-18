@@ -9,18 +9,19 @@ import { indexBy } from "../data/recordGroupingHelpers";
 import { loadMasterData } from "../data/masterData";
 import { getCardIdsWithUnverifiedPrintings } from "../data/printings";
 import { getRegions } from "../data/regions";
-import { matchesAllTokens, matchesSetNumberAndTitle, splitQuery } from "../data/search";
+import { joinSearchTexts, matchesAllTokensInLowerText, matchesSetNumberAndTitle, splitQuery } from "../data/search";
 import type { Card, CardSet, MasterData, SetCode } from "../data/types";
 import { useFilterParams } from "../data/useFilterParams";
 import { useLoadOnMount } from "../data/useLoadOnMount";
 import { CARD_SEARCH_LABEL } from "../data/cardSearchLabel";
 
 // A setcode prepared for searching, with the card it belongs to (needed to show its tile).
+// searchText is the set number and the card title joined (lowercase), numberText is the set number alone.
 type SearchableSetCode = {
   setcode: SetCode;
   card: Card;
   numberText: string;
-  titleText: string;
+  searchText: string;
 };
 
 // Keeps the DOM small; the heading shows the full match count.
@@ -28,17 +29,18 @@ const MAX_RESULTS = 50;
 
 // Callers pass a non-empty token list and cards already sorted by title.
 function findCardMatches(sortedCards: Card[], tokens: string[]): Card[] {
-  const firstToken = tokens[0].toLowerCase();
+  const firstToken = tokens[0];
 
   // Titles that start with the first token come first. Both groups keep the
   // input's alphabetical order, so no sorting is needed here.
   const prefixMatches: Card[] = [];
   const otherMatches: Card[] = [];
   for (const card of sortedCards) {
-    if (!matchesAllTokens(card.title, tokens)) {
+    const lowerTitle = card.title.toLowerCase();
+    if (!matchesAllTokensInLowerText(lowerTitle, tokens)) {
       continue;
     }
-    if (card.title.toLowerCase().startsWith(firstToken)) {
+    if (lowerTitle.startsWith(firstToken)) {
       prefixMatches.push(card);
     } else {
       otherMatches.push(card);
@@ -70,7 +72,8 @@ function buildSearchableSetcodes(
       titleText = card.title.toLowerCase();
       lowerTitlesByCardId.set(card.card_id, titleText);
     }
-    return [{ setcode, card, numberText: setcode.set_number.toLowerCase(), titleText }];
+    const numberText = setcode.set_number.toLowerCase();
+    return [{ setcode, card, numberText, searchText: joinSearchTexts(numberText, titleText) }];
   });
 }
 
@@ -78,7 +81,7 @@ function buildSearchableSetcodes(
 function findSetcodeMatches(sortedEntries: SearchableSetCode[], tokens: string[]): SearchableSetCode[] {
   const matches: SearchableSetCode[] = [];
   for (const entry of sortedEntries) {
-    if (matchesSetNumberAndTitle(entry.numberText, entry.titleText, tokens)) {
+    if (matchesSetNumberAndTitle(entry.numberText, entry.searchText, tokens)) {
       matches.push(entry);
     }
   }
