@@ -1274,6 +1274,10 @@ a {
   line-height: 1;
 }
 
+.tile-owned-partial {
+  background-image: linear-gradient(to right, var(--owned-incomplete) 50%, transparent 50%);
+}
+
 /* Everything owned: a solid green disc with the checkmark (the icon takes the colour of the text, set above) cut out of it. */
 .tile-owned-complete {
   background: var(--owned-complete);
