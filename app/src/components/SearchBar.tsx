@@ -1,18 +1,18 @@
 type SearchBarProps = {
   value: string;
   onChange: (value: string) => void;
-  placeholder: string;
+  // Shown in the box while it is empty, and what a screen reader calls the box.
   label: string;
 };
 
-export function SearchBar({ value, onChange, placeholder, label }: SearchBarProps) {
+export function SearchBar({ value, onChange, label }: SearchBarProps) {
   return (
     <input
       type="search"
       className="search-bar"
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      placeholder={placeholder}
+      placeholder={label}
       aria-label={label}
       autoComplete="off"
     />

@@ -664,7 +664,7 @@ a {
   --binder-strip-gap: 1rem;
 
   display: flex;
-  flex: 2 1 0;
+  flex: 3 1 0;
   align-items: center;
   justify-content: center;
   gap: var(--binder-strip-gap);
@@ -959,9 +959,13 @@ a {
   flex: 1 1 0;
   min-height: 0;
   margin-top: 0.5rem;
+  /* No padding on top: the toolbar is the first thing in the pane, and any room above it would show only while the pane
+     is scrolled to the top (once it sticks, it sits flush against the top edge). */
   padding: 0 1rem 1rem;
   overflow-y: auto;
   border-top: 1px solid var(--border);
+  /* So that the toolbar can change layout with the width of the pane (see .binder-pool-toolbar), not of the screen. */
+  container-type: inline-size;
 }
 
 .binder-pool-title {
@@ -969,17 +973,20 @@ a {
   font-size: 1.25rem;
 }
 
-/* The toolbar at the top of the pool pane (see BinderPool), sticky on scroll. On a narrow screen the selection bar wraps
-   onto a row of its own (its flex-basis, not its content, decides that, so the toolbar doesn't change height when a card
-   is picked up). */
+/* The toolbar at the top of the pool pane (see BinderPool): the add list control and the main part (the name filter, or
+   the selection bar while a card is picked up) side by side on one row. It stays at the top of the pane while the cards
+   scroll under it, so the buttons are in reach however far down the picked up card is. On a narrow screen the main part
+   wraps onto a row of its own (its flex-basis, not its content, decides that, so the toolbar doesn't change height when a
+   card is picked up, and the cards don't move). The
+   negative margins and matching padding make it as wide as the pane, which is what covers the part of the cards' corner
+   buttons that sticks out at the sides. Above those buttons (z-index 10). */
 .binder-pool-toolbar {
   position: sticky;
   top: 0;
   z-index: 20;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
   margin: 0 -1rem;
   padding: 0.5rem 1rem;
   background: var(--bg);
@@ -1050,17 +1057,55 @@ a {
   box-shadow: 0 0 0 2px var(--accent);
 }
 
-/* The selection bar (see BinderSelectionBar): the part of the pool toolbar that says which card is picked up, with the
-   buttons for it. It takes the room the add list control leaves, or a row of its own when that is less than its
-   flex-basis. A fixed height, so that the toolbar doesn't change when a card is picked up. */
-.binder-selection-bar {
+/* The main part of the pool toolbar: what takes the room the add list control leaves, or a row of its own when stacked.
+   It holds the name filter or the selection bar, whichever BinderPool shows. A fixed height, so that the toolbar doesn't
+   change when one replaces the other. */
+.binder-pool-toolbar-main {
   display: flex;
-  flex: 1 1 18rem;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
   min-width: 0;
   height: 2.75rem;
+}
+
+/* A pane wide enough for the add list control and a useful main part (about 35rem, the control being about 16rem wide):
+   side by side. The main part is stretched over the toolbar's vertical padding (negative margin, matching padding) so that
+   its left border, the divider, runs the whole height of the toolbar from the line above to the line below. */
+@container (min-width: 35rem) {
+  .binder-pool-toolbar {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .binder-pool-toolbar-main {
+    flex: 1 1 auto;
+    height: 3.75rem;
+    margin: -0.5rem 0;
+    padding: 0.5rem 0 0.5rem 1rem;
+    border-left: 1px solid var(--border);
+  }
+}
+
+/* The name filter in the toolbar: the same SearchBar as the pages have, made as high as the buttons beside it and not
+   wider than a search box needs to be. Overrides .search-bar above (same specificity or more, and later in the file). */
+.binder-pool-toolbar-main .search-bar {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: 24rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0 0.75rem;
+}
+
+/* The selection bar (see BinderSelectionBar): says which card is picked up, with the buttons for it right after the
+   card's info. The info is the part that gives way (cut short with an ellipsis) when there isn't room for both. */
+.binder-selection-bar {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
 }
 
 .binder-selection-info {
@@ -1079,14 +1124,6 @@ a {
 
 .binder-selection-card-name {
   font-weight: 600;
-}
-
-.binder-selection-hint {
-  margin: 0;
-  overflow: hidden;
-  font-size: 0.875rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .binder-selection-actions {

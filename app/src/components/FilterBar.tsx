@@ -18,12 +18,7 @@ type FilterBarProps = {
 export function FilterBar({ filters, searchLabel, games, regions }: FilterBarProps) {
   return (
     <>
-      <SearchBar
-        value={filters.query}
-        onChange={filters.setSearchQuery}
-        placeholder={searchLabel}
-        label={searchLabel}
-      />
+      <SearchBar value={filters.query} onChange={filters.setSearchQuery} label={searchLabel} />
       <GameToggles
         games={games}
         disabledGames={filters.disabledGames}

@@ -8,7 +8,8 @@ type SubmitSearchBarProps = {
   onSubmit: (query: string) => void;
 };
 
-// A search bar that does nothing until it is submitted. The live version is FilterBar.
+// A search bar that does nothing until it is submitted. The live versions are FilterBar (search text and toggles in the
+// address bar) and a SearchBar used directly.
 export function SubmitSearchBar({ searchLabel, onSubmit }: SubmitSearchBarProps) {
   const [query, setQuery] = useState("");
 
@@ -23,7 +24,7 @@ export function SubmitSearchBar({ searchLabel, onSubmit }: SubmitSearchBarProps)
 
   return (
     <form className="search-form" onSubmit={handleSubmit}>
-      <SearchBar value={query} onChange={setQuery} placeholder={searchLabel} label={searchLabel} />
+      <SearchBar value={query} onChange={setQuery} label={searchLabel} />
       <button type="submit" className="action-button">Search</button>
     </form>
   );
