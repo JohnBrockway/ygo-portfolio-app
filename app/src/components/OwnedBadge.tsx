@@ -14,15 +14,17 @@ const OWNED_CLASS_NAMES: Record<OwnedState, string> = {
   complete: "tile-owned tile-owned-complete",
 };
 
-// How much of what the user wants of this printing and edition they own, and what to call it. The badge's look and its
-// tooltip and aria-label all come from this one result, so they can't disagree.
+// How much of what the user wants of this printing and edition they own, and what to call it, or null where nothing is
+// wanted so the tile has no badge.
 // - nothing owned: none;
 // - at least as many owned as wished: complete;
 // - anything in between: partial.
-function getOwnedBadgeInfo(ownership: EntryOwnership): { state: OwnedState; label: string } {
+function getOwnedBadgeInfo(ownership: EntryOwnership): { state: OwnedState; label: string } | null {
   const owned = ownership.ownedQuantity;
   const wished = ownership.nonOwnedListCount;
-  if (owned === 0) {
+  if (wished === 0) {
+    return null;
+  } else if (owned === 0) {
     return { state: "none", label: NOT_OWNED_LABEL };
   } else if (owned >= wished) {
     return { state: "complete", label: OWNED_LABEL };
@@ -31,13 +33,19 @@ function getOwnedBadgeInfo(ownership: EntryOwnership): { state: OwnedState; labe
   }
 }
 
+// Whether the badge for this ownership represents "complete". False where the badge shows any other or no state.
+export function isCollectionComplete(ownership: EntryOwnership | null): boolean {
+  return ownership !== null && getOwnedBadgeInfo(ownership)?.state === "complete";
+}
+
 // The badge on the bottom-right corner of a list tile: how much of what is wanted of the exact printing and edition on
 // the tile is owned.
 export function OwnedBadge({ ownership }: { ownership: EntryOwnership }) {
-  if (ownership.nonOwnedListCount === 0) {
+  const info = getOwnedBadgeInfo(ownership);
+  if (info === null) {
     return null;
   }
-  const { state, label } = getOwnedBadgeInfo(ownership);
+  const { state, label } = info;
   return (
     <span className={OWNED_CLASS_NAMES[state]} role="img" aria-label={label} title={label}>
       {state === "complete" ? <CheckIcon /> : null}

@@ -1508,3 +1508,49 @@ a {
 .error-banner p {
   margin: 0;
 }
+
+.ownership-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.5rem 0 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ownership-filter input[role="switch"] {
+  appearance: none;
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  margin: 0;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ownership-filter input[role="switch"]::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.25rem - 6px);
+  height: calc(1.25rem - 6px);
+  border-radius: 50%;
+  background: currentColor;
+  transition: transform 0.15s;
+}
+
+.ownership-filter input[role="switch"]:checked {
+  background: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+.ownership-filter input[role="switch"]:checked::before {
+  transform: translateX(1rem);
+}
+
+.ownership-filter input[role="switch"]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
