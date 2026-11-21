@@ -23,9 +23,10 @@ export function createTrackedStore(db: IDBDatabase, storeName: string, keyPath: 
 
 // A copy of the record with the changes applied, marked as changed at `now`. Every change to a stored record goes
 // through here (pass the same `now` when one operation changes several records), so none can forget to move updatedAt
-// or set dirty.
+// or set dirty. Make sure updatedAt is always incremented at least one ms even in the case of simultaneous writes/clock
+// errors, so that a new version of record is guaranteed to have its own unique updatedAt, used for sync.
 export function changedRecord<T extends TrackedRecord>(record: T, changes: Partial<T>, now: number): T {
-  return { ...record, ...changes, updatedAt: now, dirty: 1 };
+  return { ...record, ...changes, updatedAt: Math.max(now, record.updatedAt + 1), dirty: 1 };
 }
 
 // Reads a record that has not been deleted. A record that is missing or deleted is a mistake in the caller or a stale

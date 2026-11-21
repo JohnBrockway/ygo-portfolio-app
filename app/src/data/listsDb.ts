@@ -187,15 +187,18 @@ export async function changeEntryQuantityInDatabase(
       return null;
     }
 
-    const entry: ListEntryRecord = {
+    // An entry that isn't in the database yet is treated as if it was removed and is being readded, to make sure it gets
+    // the correct updatedAt based on the logic in changedRecord.
+    const baseEntry: ListEntryRecord = existing ?? {
       listId,
       cardId,
       printingId,
       edition,
-      quantity,
-      updatedAt: Date.now(),
-      dirty: 1,
+      quantity: 0,
+      updatedAt: 0,
+      dirty: 0,
     };
+    const entry = changedRecord(baseEntry, { quantity }, Date.now());
     await requestToPromise(store.put(entry));
     return entry;
   });
