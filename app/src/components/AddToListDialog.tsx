@@ -49,13 +49,13 @@ export function AddToListDialog({
 
   let createListsHint: ReactNode = null;
   if (menuLists.every((list) => list.builtIn)) {
-    createListsHint = <p className="muted list-dialog-hint">Create your own lists on the Lists page.</p>;
+    createListsHint = <p className="muted dialog-hint">Create your own lists on the Lists page.</p>;
   }
 
   return (
     <dialog
       ref={dialogRef}
-      className="list-dialog"
+      className="dialog"
       aria-labelledby={titleId}
       onClose={onClosed}
       // A click on the backdrop lands on the dialog element itself; a click inside lands on something within it.
@@ -65,8 +65,8 @@ export function AddToListDialog({
         }
       }}
     >
-      <div className="list-dialog-body">
-        <h2 id={titleId} className="list-dialog-title">
+      <div className="dialog-body">
+        <h2 id={titleId} className="dialog-title">
           Add to list <span className="muted">· {label}</span>
         </h2>
         <ul className="list-choices">

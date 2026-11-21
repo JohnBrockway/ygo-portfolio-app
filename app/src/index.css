@@ -99,6 +99,10 @@ a {
   color: var(--accent);
 }
 
+/* The account control (see AccountControl): who is signed in, and the sign in or sign out button. On a phone it is one
+   more item at the end of the bottom bar, with just the button (the name is hidden; the email and user id are in the
+   tooltip). A failed sign in or sign out is shown just above the bar, since there is no room for it in the bar. */
+
 .account {
   position: relative;
   display: flex;
@@ -580,6 +584,29 @@ a {
 
 .action-button:disabled {
   border-color: var(--border);
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* A button that looks like a link, for the small secondary actions in a dialog (back, forgot password, ...). */
+.link-button {
+  align-self: flex-start; /* in a column of stretched children, a link keeps the width of its text */
+  padding: 0;
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.link-button:disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -1491,9 +1518,10 @@ a {
   color: var(--accent);
 }
 
-/* List picker: a modal, so it isn't clipped or positioned by the narrow edition cell it was opened from. The dialog
-   has no padding of its own so that a click on the backdrop is the only click that lands on the dialog element. */
-.list-dialog {
+/* Dialogs (the list picker, the sign in dialog): modals, so they aren't clipped or positioned by the narrow cell or bar
+   they were opened from. The dialog has no padding of its own so that a click on the backdrop is the only click that
+   lands on the dialog element; what is in it goes in .dialog-body. */
+.dialog {
   width: min(20rem, calc(100% - 2rem));
   padding: 0;
   background: var(--surface);
@@ -1502,21 +1530,27 @@ a {
   color: var(--text);
 }
 
-.list-dialog::backdrop {
+.dialog::backdrop {
   background: rgba(0, 0, 0, 0.6);
 }
 
-.list-dialog-body {
+.dialog-body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
 }
 
-.list-dialog-title {
+.dialog-title {
   margin: 0;
   font-size: 1rem;
   line-height: 1.3;
+}
+
+/* A line of small print in a dialog: a hint, or a notice. */
+.dialog-hint {
+  margin: 0;
+  font-size: 0.875rem;
 }
 
 .list-choices {
@@ -1542,8 +1576,38 @@ a {
   accent-color: var(--accent);
 }
 
-.list-dialog-hint {
+.account-dialog-button {
+  height: 2.5rem;
+}
+
+.account-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.account-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+/* Overrides the margin and the largest width of .text-input (this has more specificity), so the field fills the dialog. */
+.account-dialog-field .text-input {
+  max-width: none;
   margin: 0;
+}
+
+.account-dialog-form .form-error {
+  margin: 0;
+}
+
+.account-dialog-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
   font-size: 0.875rem;
 }
 
