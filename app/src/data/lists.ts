@@ -2,6 +2,7 @@ import { getGroup, groupBy } from "./recordGroupingHelpers";
 import {
   changeEntryQuantityInDatabase,
   clearListsInDatabase,
+  countDirtyListsDataFromDatabase,
   createListInDatabase,
   deleteListInDatabase,
   loadListsFromDatabase,
@@ -62,13 +63,15 @@ async function loadListsState(): Promise<ListsState> {
   return makeState("ready", null, activeLists, activeEntries);
 }
 
-// Components should only ever read through useLiveLists, change entries through changeEntryQuantity and change
-// lists through createList, renameList, and deleteList.
+// Components should only ever read through useLiveLists (and useLiveListsDirtyCount, for how many records still have to
+// be synced), change entries through changeEntryQuantity and change lists through createList, renameList, and
+// deleteList.
 const listsStore = createMemoryStore<ListsState>({
   name: "lists",
   initialState: makeState("loading", null, [], []),
   loadState: loadListsState,
   clearDatabase: clearListsInDatabase,
+  countDirtyRecords: countDirtyListsDataFromDatabase,
 });
 
 export const getLists = listsStore.getState;
@@ -80,6 +83,13 @@ export const subscribeToLists = listsStore.subscribe;
 
 // The current lists, re-rendering the component whenever they change.
 export const useLiveLists = listsStore.useLiveState;
+
+// How many lists and entries have changed here and not yet been synced, deleted ones included (see
+// MemoryStore.getDirtyCount).
+export const getListsDirtyCount = listsStore.getDirtyCount;
+
+// The number of unsynced lists and entries, re-rendering the component whenever it changes.
+export const useLiveListsDirtyCount = listsStore.useLiveDirtyCount;
 
 // Reads every list and entry from the database into memory.
 export const refreshLists = listsStore.refresh;

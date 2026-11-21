@@ -4,6 +4,7 @@ import {
   addPageToBinderInDatabase,
   clearBindersInDatabase,
   clearCardPlacementInDatabase,
+  countDirtyBindersDataFromDatabase,
   createBinderInDatabase,
   deleteBinderInDatabase,
   detachCardFromListInDatabase,
@@ -58,14 +59,16 @@ async function loadBindersState(): Promise<BindersState> {
   return makeState("ready", null, activeBinders, activeCards);
 }
 
-// Components should only ever read through useLiveBinders, and change binders and their cards through the functions
-// below (createBinder, renameBinder, deleteBinder, addPageToBinder, removeLastPageFromBinder, addCardToBinder,
-// addListToBinder, removeCardFromBinder, placeCardInSlot, clearCardPlacement, detachCardFromList).
+// Components should only ever read through useLiveBinders (and useLiveBindersDirtyCount for sync state), and
+// change binders and their cards through the functions below (createBinder, renameBinder, deleteBinder,
+// addPageToBinder, removeLastPageFromBinder, addCardToBinder, addListToBinder, removeCardFromBinder,
+// placeCardInSlot, clearCardPlacement, detachCardFromList).
 const bindersStore = createMemoryStore<BindersState>({
   name: "binders",
   initialState: makeState("loading", null, [], []),
   loadState: loadBindersState,
   clearDatabase: clearBindersInDatabase,
+  countDirtyRecords: countDirtyBindersDataFromDatabase,
 });
 
 export const getBinders = bindersStore.getState;
@@ -77,6 +80,13 @@ export const subscribeToBinders = bindersStore.subscribe;
 
 // The current binders, re-rendering the component whenever they change.
 export const useLiveBinders = bindersStore.useLiveState;
+
+// How many binders and cards have changed here and not yet been synced, deleted ones included (see
+// MemoryStore.getDirtyCount).
+export const getBindersDirtyCount = bindersStore.getDirtyCount;
+
+// The number of unsynced binders and cards, re-rendering the component whenever it changes.
+export const useLiveBindersDirtyCount = bindersStore.useLiveDirtyCount;
 
 // Reads every binder and card from the database into memory.
 export const refreshBinders = bindersStore.refresh;

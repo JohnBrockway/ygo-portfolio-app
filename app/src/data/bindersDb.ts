@@ -4,6 +4,7 @@ import {
   applyRemoteRecords,
   changedRecord,
   compareByOrder,
+  countDirtyRecords,
   createTrackedStore,
   findNameProblem,
   getDirtyRecords,
@@ -22,7 +23,8 @@ import type { Edition } from "./types";
 //
 // The sync-only functions (markBindersDataSyncedInDatabase, applyRemoteBindersDataToDatabase) are the exception to the
 // above: only the sync layer calls them, and it brings memory and the other tabs up to date itself afterwards.
-// loadDirtyBindersDataFromDatabase only reads, so like loadBindersFromDatabase it is fine anywhere.
+// loadDirtyBindersDataFromDatabase and countDirtyBindersDataFromDatabase only read, so like loadBindersFromDatabase
+// they are fine anywhere.
 //
 // A binder holds cards. Each card is one physical copy of a specific printing + edition, so two copies of the same
 // printing are two cards. A card is either unplaced or sits in one slot (a position on one of the binder's pages).
@@ -518,6 +520,17 @@ export async function loadDirtyBindersDataFromDatabase(): Promise<BindersData> {
     const binders = await getDirtyRecords<BinderRecord>(tx.objectStore(BINDERS_STORE));
     const cards = await getDirtyRecords<BinderCardRecord>(tx.objectStore(CARDS_STORE));
     return { binders, cards };
+  });
+}
+
+// How many binders and cards have changed here and not yet been synced, deleted and removed ones included: the number
+// the sync indicator shows.
+export async function countDirtyBindersDataFromDatabase(): Promise<number> {
+  const connection = await getBindersConnection();
+  return connection.runTransaction([BINDERS_STORE, CARDS_STORE], "readonly", async (tx) => {
+    const binderCount = await countDirtyRecords(tx.objectStore(BINDERS_STORE));
+    const cardCount = await countDirtyRecords(tx.objectStore(CARDS_STORE));
+    return binderCount + cardCount;
   });
 }
 

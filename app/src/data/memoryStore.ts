@@ -48,6 +48,9 @@ interface MemoryStoreOptions<TState extends MemoryStoreState> {
   loadState: () => Promise<TState>;
   // Dev tool: wipes the database, then puts back any defaults.
   clearDatabase: () => Promise<void>;
+  // How many records in the database have changed here and not yet been synced, deleted and removed ones included.
+  // Throws if that fails.
+  countDirtyRecords: () => Promise<number>;
 }
 
 export interface MemoryStore<TState extends MemoryStoreState> {
@@ -63,11 +66,19 @@ export interface MemoryStore<TState extends MemoryStoreState> {
   refresh: () => Promise<void>;
   // Dev tool: wipes the database, then reloads memory from it.
   clear: () => Promise<void>;
+  // How many records have changed here and not yet been synced (see MemoryStoreOptions.countDirtyRecords): what the
+  // sync indicator shows. Only to be trusted while the state is "ready". It is counted from the database after every
+  // load and every saved change, so changes the sync layer makes itself (marking records synced, applying remote ones)
+  // show up once it calls refresh.
+  getDirtyCount: () => number;
+  // The number of unsynced records, re-rendering the component whenever it changes.
+  useLiveDirtyCount: () => number;
   // Runs a change to the database through the queue. `change` makes the database call, puts what was saved into memory
   // and tells the other tabs; this adds what every change needs around that:
   // - Block saving while the data is loading or in error (the UI is disabled then, so this is a stale click).
   // - If the database call throws, nothing was saved and memory didn't change, so what is shown is still true. But a
   //   database that can't be written to needs attention, so stop changes and show the banner until a reload works.
+  // - After a saved change, count the unsynced records again.
   enqueueChange: <TRecord>(
     failureMessage: string,
     change: () => Promise<RecordSaveResult<TRecord>>,
@@ -116,6 +127,29 @@ export function createMemoryStore<TState extends MemoryStoreState>(
     return useSyncExternalStore(subscribe, getState);
   }
 
+  // --- The number of unsynced records ---
+
+  // Always counted from the database, never worked out from memory: removed and deleted records are not in memory but
+  // still have to be synced. Counted on every load and after every saved change. 0 until the first load.
+  let dirtyCount = 0;
+
+  function getDirtyCount(): number {
+    return dirtyCount;
+  }
+
+  function setDirtyCount(count: number): void {
+    if (count !== dirtyCount) {
+      dirtyCount = count;
+      listeners.forEach((listener) => listener());
+    }
+  }
+
+  // Shares the state's listeners, so a component that only uses useLiveState is called when the count changes too. It
+  // doesn't re-render, as its state is still the same object.
+  function useLiveDirtyCount(): number {
+    return useSyncExternalStore(subscribe, getDirtyCount);
+  }
+
   // Everything that touches the database goes through this queue, one operation at a time, and each result is
   // applied to memory before the next operation starts. So memory is always the result of the latest operation,
   // never a slow read landing on top of a newer write.
@@ -155,12 +189,27 @@ export function createMemoryStore<TState extends MemoryStoreState>(
 
   // --- Loading and changing ---
 
-  // Reads the database into memory. Only call this from inside the queue.
+  // Reads the database into memory, and counts the unsynced records. Only call this from inside the queue.
   async function loadIntoMemory(): Promise<void> {
     try {
-      setState(await options.loadState());
+      const loadedState = await options.loadState();
+      const loadedDirtyCount = await options.countDirtyRecords();
+      setDirtyCount(loadedDirtyCount);
+      setState(loadedState);
     } catch (error) {
       console.error(`Couldn't load ${options.name}`, error);
+      setErrorState(error);
+    }
+  }
+
+  // Counts the unsynced records again, after a change was saved. If counting fails the database can't be read, which is
+  // the same as a failed load: the banner shows until a reload works. The change itself did happen, so it is still
+  // reported as saved.
+  async function updateDirtyCount(): Promise<void> {
+    try {
+      setDirtyCount(await options.countDirtyRecords());
+    } catch (error) {
+      console.error(`Couldn't count the unsynced ${options.name}`, error);
       setErrorState(error);
     }
   }
@@ -185,15 +234,31 @@ export function createMemoryStore<TState extends MemoryStoreState>(
       if (!canChangeState(state)) {
         return NOT_SAVED;
       }
+      let result: RecordSaveResult<TRecord>;
       try {
-        return await change();
+        result = await change();
       } catch (error) {
         console.error(failureMessage, error);
         setErrorState(error);
         return NOT_SAVED;
       }
+      if (result.status === "saved") {
+        await updateDirtyCount();
+      }
+      return result;
     });
   }
 
-  return { getState, subscribe, useLiveState, setState, notifyOtherTabs, refresh, clear, enqueueChange };
+  return {
+    getState,
+    subscribe,
+    useLiveState,
+    getDirtyCount,
+    useLiveDirtyCount,
+    setState,
+    notifyOtherTabs,
+    refresh,
+    clear,
+    enqueueChange,
+  };
 }

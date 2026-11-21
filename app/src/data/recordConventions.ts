@@ -5,7 +5,7 @@ import { requestToPromise } from "./indexedDb";
 // - Deleted records stay in the database as tombstones until synced, so reads must skip them (getLiveRecordOrThrow).
 // - Named records (lists, binders) have unique names, an order, and report saves the same way (RecordSaveResult).
 // - Syncing: the dirty records are read, marked as synced and merged with the cloud's copies the same way
-//   (getDirtyRecords, markRecordsSynced, applyRemoteRecords).
+//   (getDirtyRecords, countDirtyRecords, markRecordsSynced, applyRemoteRecords).
 
 const BY_DIRTY_INDEX = "byDirty";
 
@@ -78,6 +78,11 @@ function getRecordKey(store: IDBObjectStore, record: object): IDBValidKey {
 // order.
 export function getDirtyRecords<T extends TrackedRecord>(store: IDBObjectStore): Promise<T[]> {
   return requestToPromise(store.index(BY_DIRTY_INDEX).getAll(1));
+}
+
+// How many records in the store have changed here and not yet been synced (deleted ones included).
+export function countDirtyRecords(store: IDBObjectStore): Promise<number> {
+  return requestToPromise(store.index(BY_DIRTY_INDEX).count(1));
 }
 
 // Marks records as synced, once they have been uploaded. `uploadedRecords` are the records as they were uploaded. A

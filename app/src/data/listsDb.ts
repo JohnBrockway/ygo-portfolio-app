@@ -4,6 +4,7 @@ import {
   applyRemoteRecords,
   changedRecord,
   compareByOrder,
+  countDirtyRecords,
   createTrackedStore,
   findNameProblem,
   getDirtyRecords,
@@ -23,7 +24,8 @@ import type { Edition } from "./types";
 //
 // The sync-only functions (markListsDataSyncedInDatabase, applyRemoteListsDataToDatabase) are the exception to the
 // above: only the sync layer calls them, and it brings memory and the other tabs up to date itself afterwards.
-// loadDirtyListsDataFromDatabase only reads, so like loadListsFromDatabase it is fine anywhere.
+// loadDirtyListsDataFromDatabase and countDirtyListsDataFromDatabase only read, so like loadListsFromDatabase they are
+// fine anywhere.
 
 const DB_NAME = "ygo-lists";
 const DB_VERSION = 1;
@@ -313,6 +315,17 @@ export async function loadDirtyListsDataFromDatabase(): Promise<ListsData> {
     const lists = await getDirtyRecords<ListRecord>(tx.objectStore(LISTS_STORE));
     const entries = await getDirtyRecords<ListEntryRecord>(tx.objectStore(ENTRIES_STORE));
     return { lists, entries };
+  });
+}
+
+// How many lists and entries have changed here and not yet been synced, deleted and removed ones included: the number
+// the sync indicator shows.
+export async function countDirtyListsDataFromDatabase(): Promise<number> {
+  const connection = await getListsConnection();
+  return connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readonly", async (tx) => {
+    const listCount = await countDirtyRecords(tx.objectStore(LISTS_STORE));
+    const entryCount = await countDirtyRecords(tx.objectStore(ENTRIES_STORE));
+    return listCount + entryCount;
   });
 }
 
