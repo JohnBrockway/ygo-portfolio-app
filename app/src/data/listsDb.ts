@@ -1,15 +1,18 @@
 import { createConnectionGetter, putAll, requestToPromise } from "./indexedDb";
 import type { IndexedDbConnection } from "./indexedDb";
 import {
+  applyRemoteRecords,
   changedRecord,
   compareByOrder,
   createTrackedStore,
   findNameProblem,
+  getDirtyRecords,
   getLiveRecordOrThrow,
   getNextOrder,
   makeRecordId,
+  markRecordsSynced,
 } from "./recordConventions";
-import type { RecordSaveResult } from "./recordConventions";
+import type { RecordSaveResult, RemoteRecord } from "./recordConventions";
 import type { Edition } from "./types";
 
 // The database layer for lists. Only lists.ts may call the functions that change data (changeEntryQuantityInDatabase,
@@ -17,6 +20,10 @@ import type { Edition } from "./types";
 // other tabs in step with the database, and a direct call would skip that. Reading with loadListsFromDatabase is
 // fine anywhere (e.g. the dev panel). bindersDb.ts is the same layer for binders and is laid out the same way; what
 // both do alike lives in indexedDb.ts and recordConventions.ts.
+//
+// The sync-only functions (markListsDataSyncedInDatabase, applyRemoteListsDataToDatabase) are the exception to the
+// above: only the sync layer calls them, and it brings memory and the other tabs up to date itself afterwards.
+// loadDirtyListsDataFromDatabase only reads, so like loadListsFromDatabase it is fine anywhere.
 
 const DB_NAME = "ygo-lists";
 const DB_VERSION = 1;
@@ -65,6 +72,12 @@ export interface ListEntryRecord {
 export interface ListsData {
   lists: ListRecord[];
   entries: ListEntryRecord[];
+}
+
+// The cloud's copy of what a ListsData holds, as downloaded: records without `dirty` (see RemoteRecord).
+export interface RemoteListsData {
+  lists: RemoteRecord<ListRecord>[];
+  entries: RemoteRecord<ListEntryRecord>[];
 }
 
 // What every change to the lists reports, in both layers (see RecordSaveResult). `record` is the list as saved when
@@ -187,8 +200,8 @@ export async function changeEntryQuantityInDatabase(
       return null;
     }
 
-    // An entry that isn't in the database yet is treated as if it was removed and is being readded, to make sure it gets
-    // the correct updatedAt based on the logic in changedRecord.
+    // An entry that isn't in the database yet starts out as a removed one that was never synced, so that every entry
+    // gets its updatedAt and dirty from changedRecord.
     const baseEntry: ListEntryRecord = existing ?? {
       listId,
       cardId,
@@ -287,6 +300,51 @@ export async function deleteListInDatabase(listId: string): Promise<ListRecord> 
 
     await Promise.all([requestToPromise(listStore.put(deletedList)), putAll(entryStore, removedEntries)]);
     return deletedList;
+  });
+}
+
+// --- Syncing ---
+
+// Every list and entry that has changed here and not yet been synced, deleted and removed ones included, in no
+// particular order. The built-in lists are never in it: they are never changed, and every device makes its own.
+export async function loadDirtyListsDataFromDatabase(): Promise<ListsData> {
+  const connection = await getListsConnection();
+  return connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readonly", async (tx) => {
+    const lists = await getDirtyRecords<ListRecord>(tx.objectStore(LISTS_STORE));
+    const entries = await getDirtyRecords<ListEntryRecord>(tx.objectStore(ENTRIES_STORE));
+    return { lists, entries };
+  });
+}
+
+// Marks lists and entries as synced once they have been uploaded. `uploaded` is what was uploaded. Each record is only
+// marked if the database still holds that version of it, so one that was changed in the meantime stays dirty (see
+// markRecordsSynced). Deleted lists and removed entries that were uploaded are dropped from the database: the cloud
+// holds their removal now.
+export async function markListsDataSyncedInDatabase(uploaded: ListsData): Promise<void> {
+  const connection = await getListsConnection();
+  await connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readwrite", async (tx) => {
+    await Promise.all([
+      markRecordsSynced(tx.objectStore(LISTS_STORE), uploaded.lists, (list) => list.deleted),
+      markRecordsSynced(tx.objectStore(ENTRIES_STORE), uploaded.entries, (entry) => entry.quantity <= 0),
+    ]);
+  });
+}
+
+// Merges downloaded lists and entries into the database (see applyRemoteRecords: last write wins), all in one
+// transaction. Resolves with the records that were applied, as saved (a deleted list or removed entry is returned but
+// not stored, see applyRemoteRecords). Memory doesn't know about them yet.
+export async function applyRemoteListsDataToDatabase(remote: RemoteListsData): Promise<ListsData> {
+  const connection = await getListsConnection();
+  return connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readwrite", async (tx): Promise<ListsData> => {
+    const [lists, entries] = await Promise.all([
+      applyRemoteRecords<ListRecord>(tx.objectStore(LISTS_STORE), remote.lists, (list) => list.deleted),
+      applyRemoteRecords<ListEntryRecord>(
+        tx.objectStore(ENTRIES_STORE),
+        remote.entries,
+        (entry) => entry.quantity <= 0,
+      ),
+    ]);
+    return { lists, entries };
   });
 }
 

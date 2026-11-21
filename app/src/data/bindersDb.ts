@@ -1,21 +1,28 @@
 import { createConnectionGetter, putAll, requestToPromise } from "./indexedDb";
 import type { ListEntryRecord } from "./listsDb";
 import {
+  applyRemoteRecords,
   changedRecord,
   compareByOrder,
   createTrackedStore,
   findNameProblem,
+  getDirtyRecords,
   getLiveRecordOrThrow,
   getNextOrder,
   makeRecordId,
+  markRecordsSynced,
 } from "./recordConventions";
-import type { RecordSaveResult } from "./recordConventions";
+import type { RecordSaveResult, RemoteRecord } from "./recordConventions";
 import type { Edition } from "./types";
 
 // The database layer for binders. Only binders.ts may call the functions that change data (.*InDatabase): it's what keeps
 // memory and the other tabs in step with the database, and a direct call would skip that. Reading with loadBindersFromDatabase is fine
 // anywhere (e.g. the dev panel). listsDb.ts is the same layer for lists and is laid out the same way; what both do alike
 // lives in indexedDb.ts and recordConventions.ts.
+//
+// The sync-only functions (markBindersDataSyncedInDatabase, applyRemoteBindersDataToDatabase) are the exception to the
+// above: only the sync layer calls them, and it brings memory and the other tabs up to date itself afterwards.
+// loadDirtyBindersDataFromDatabase only reads, so like loadBindersFromDatabase it is fine anywhere.
 //
 // A binder holds cards. Each card is one physical copy of a specific printing + edition, so two copies of the same
 // printing are two cards. A card is either unplaced or sits in one slot (a position on one of the binder's pages).
@@ -94,6 +101,12 @@ export interface BinderCardRecord {
 export interface BindersData {
   binders: BinderRecord[];
   cards: BinderCardRecord[];
+}
+
+// The cloud's copy of what a BindersData holds, as downloaded: records without `dirty` (see RemoteRecord).
+export interface RemoteBindersData {
+  binders: RemoteRecord<BinderRecord>[];
+  cards: RemoteRecord<BinderCardRecord>[];
 }
 
 // What every change to the binders reports, in both layers (see RecordSaveResult). `record` is the binder as saved
@@ -492,6 +505,47 @@ export async function detachCardFromListInDatabase(cardId: string): Promise<Bind
     const detachedCard = changedRecord(card, { listOrigin: null }, Date.now());
     await requestToPromise(store.put(detachedCard));
     return detachedCard;
+  });
+}
+
+// --- Syncing ---
+
+// Every binder and card that has changed here and not yet been synced, deleted and removed ones included, in no
+// particular order.
+export async function loadDirtyBindersDataFromDatabase(): Promise<BindersData> {
+  const connection = await getBindersConnection();
+  return connection.runTransaction([BINDERS_STORE, CARDS_STORE], "readonly", async (tx) => {
+    const binders = await getDirtyRecords<BinderRecord>(tx.objectStore(BINDERS_STORE));
+    const cards = await getDirtyRecords<BinderCardRecord>(tx.objectStore(CARDS_STORE));
+    return { binders, cards };
+  });
+}
+
+// Marks binders and cards as synced once they have been uploaded. `uploaded` is what was uploaded. Each record is only
+// marked if the database still holds that version of it, so one that was changed in the meantime stays dirty (see
+// markRecordsSynced). Deleted binders and removed cards that were uploaded are dropped from the database: the cloud
+// holds their removal now.
+export async function markBindersDataSyncedInDatabase(uploaded: BindersData): Promise<void> {
+  const connection = await getBindersConnection();
+  await connection.runTransaction([BINDERS_STORE, CARDS_STORE], "readwrite", async (tx) => {
+    await Promise.all([
+      markRecordsSynced(tx.objectStore(BINDERS_STORE), uploaded.binders, (binder) => binder.deleted),
+      markRecordsSynced(tx.objectStore(CARDS_STORE), uploaded.cards, (card) => card.deleted),
+    ]);
+  });
+}
+
+// Merges downloaded binders and cards into the database (see applyRemoteRecords: last write wins), all in one
+// transaction. Resolves with the records that were applied, as saved (a deleted binder or removed card is returned but
+// not stored, see applyRemoteRecords). Memory doesn't know about them yet.
+export async function applyRemoteBindersDataToDatabase(remote: RemoteBindersData): Promise<BindersData> {
+  const connection = await getBindersConnection();
+  return connection.runTransaction([BINDERS_STORE, CARDS_STORE], "readwrite", async (tx): Promise<BindersData> => {
+    const [binders, cards] = await Promise.all([
+      applyRemoteRecords<BinderRecord>(tx.objectStore(BINDERS_STORE), remote.binders, (binder) => binder.deleted),
+      applyRemoteRecords<BinderCardRecord>(tx.objectStore(CARDS_STORE), remote.cards, (card) => card.deleted),
+    ]);
+    return { binders, cards };
   });
 }
 
