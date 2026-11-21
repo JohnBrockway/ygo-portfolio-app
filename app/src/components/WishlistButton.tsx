@@ -14,10 +14,12 @@ function HeartIcon({ filled }: { filled: boolean }) {
 // One-click wishlist toggle for this printing's edition. The heart changes once the change has been saved.
 // Sits next to AddToListMenu in EditionCells and takes the same props.
 export function WishlistButton({
+  cardId,
   printingId,
   edition,
   label,
 }: {
+  cardId: string;
   printingId: string;
   edition: Edition;
   label: string;
@@ -36,7 +38,9 @@ export function WishlistButton({
       // The desired state comes from what the button shows, not the latest state, so a stale tap
       // won't flip a change in an unexpected direction. It will always set it to the state
       // expected from the button UI.
-      onClick={() => void changeEntryQuantity(WISHLIST_LIST_ID, printingId, edition, () => (onWishlist ? 0 : 1))}
+      onClick={() =>
+        void changeEntryQuantity(WISHLIST_LIST_ID, cardId, printingId, edition, () => (onWishlist ? 0 : 1))
+      }
     >
       <HeartIcon filled={onWishlist} />
     </button>

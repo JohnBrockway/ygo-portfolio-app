@@ -109,7 +109,7 @@ function ListContents({
     results = (
       <ul className="tile-grid tile-grid-cards">
         {matchingTiles.map(({ tile, ownership }) => (
-          <li key={`${tile.record.printingId}-${tile.record.edition}`}>
+          <li key={`${tile.record.cardId}-${tile.record.printingId}-${tile.record.edition}`}>
             <ListEntryTile listEntry={tile} ownership={ownership} changesDisabled={changesDisabled} />
           </li>
         ))}

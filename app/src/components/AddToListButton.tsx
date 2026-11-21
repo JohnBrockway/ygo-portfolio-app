@@ -17,10 +17,12 @@ function ListPlusIcon() {
 // tinted when the edition is on any list of the user's own (the heart already shows Wishlist).
 // Takes the same props as WishlistButton.
 export function AddToListButton({
+  cardId,
   printingId,
   edition,
   label,
 }: {
+  cardId: string;
   printingId: string;
   edition: Edition;
   label: string;
@@ -35,6 +37,7 @@ export function AddToListButton({
   if (dialogOpen) {
     dialog = (
       <AddToListDialog
+        cardId={cardId}
         printingId={printingId}
         edition={edition}
         label={label}

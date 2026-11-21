@@ -16,11 +16,13 @@ function getMenuLists(listsState: ListsState): ListRecord[] {
 // unmount the dialog.
 // A checkbox changes once the change has been saved, like the heart.
 export function AddToListDialog({
+  cardId,
   printingId,
   edition,
   label,
   onClosed,
 }: {
+  cardId: string;
   printingId: string;
   edition: Edition;
   label: string;
@@ -80,7 +82,7 @@ export function AddToListDialog({
                     // The desired state comes from what the checkbox shows, not the latest state (same as
                     // WishlistButton), so a stale tap can't flip a change in an unexpected direction.
                     onChange={() =>
-                      void changeEntryQuantity(list.id, printingId, edition, () => (onList ? 0 : 1))
+                      void changeEntryQuantity(list.id, cardId, printingId, edition, () => (onList ? 0 : 1))
                     }
                   />
                   <span>{list.name}</span>

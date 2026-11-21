@@ -5,7 +5,15 @@ import { OwnedStepper } from "./OwnedStepper";
 import { WishlistButton } from "./WishlistButton";
 
 // One cell per edition the set has, side by side, each with the owned stepper and the list buttons.
-export function EditionCells({ editions, printingId }: { editions: Edition[]; printingId: string }) {
+export function EditionCells({
+  editions,
+  cardId,
+  printingId,
+}: {
+  editions: Edition[];
+  cardId: string;
+  printingId: string;
+}) {
   if (editions.length === 0) {
     return (
       <ul className="edition-cells">
@@ -23,10 +31,10 @@ export function EditionCells({ editions, printingId }: { editions: Edition[]; pr
         return (
           <li key={edition} className="edition-cell">
             <div className="edition-label">{label}</div>
-            <OwnedStepper printingId={printingId} edition={edition} label={label} />
+            <OwnedStepper cardId={cardId} printingId={printingId} edition={edition} label={label} />
             <div className="list-buttons">
-              <WishlistButton printingId={printingId} edition={edition} label={label} />
-              <AddToListButton printingId={printingId} edition={edition} label={label} />
+              <WishlistButton cardId={cardId} printingId={printingId} edition={edition} label={label} />
+              <AddToListButton cardId={cardId} printingId={printingId} edition={edition} label={label} />
             </div>
           </li>
         );

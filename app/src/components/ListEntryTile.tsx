@@ -42,7 +42,7 @@ export function ListEntryTile({
       }
     }
     setRemoving(true);
-    await changeEntryQuantity(entry.listId, entry.printingId, entry.edition, () => 0);
+    await changeEntryQuantity(entry.listId, entry.cardId, entry.printingId, entry.edition, () => 0);
     // On success this tile is gone; on failure it stays, and the banner explains.
     setRemoving(false);
   }

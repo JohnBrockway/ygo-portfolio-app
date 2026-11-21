@@ -150,7 +150,7 @@ function PrintingDetail({ data, setcodeId }: { data: MasterData; setcodeId: stri
             printing.printing_id === null ? (
               <p className="muted">Can't be marked until it has been exported and built into the data.</p>
             ) : (
-              <EditionCells editions={editions} printingId={printing.printing_id} />
+              <EditionCells editions={editions} cardId={setcode.card_id} printingId={printing.printing_id} />
             );
 
           return (

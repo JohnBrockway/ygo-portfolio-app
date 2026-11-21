@@ -4,10 +4,12 @@ import type { Edition } from "../data/types";
 
 // How many copies of this printing's edition are owned, with a -/+ to change it.
 export function OwnedStepper({
+  cardId,
   printingId,
   edition,
   label,
 }: {
+  cardId: string;
   printingId: string;
   edition: Edition;
   label: string;
@@ -23,7 +25,9 @@ export function OwnedStepper({
         className="action-button"
         aria-label={`Remove one ${label} copy`}
         disabled={!canChange || owned === 0}
-        onClick={() => void changeEntryQuantity(OWNED_LIST_ID, printingId, edition, (current) => current - 1)}
+        onClick={() =>
+          void changeEntryQuantity(OWNED_LIST_ID, cardId, printingId, edition, (current) => current - 1)
+        }
       >
         −
       </button>
@@ -33,7 +37,9 @@ export function OwnedStepper({
         className="action-button"
         aria-label={`Add one ${label} copy`}
         disabled={!canChange}
-        onClick={() => void changeEntryQuantity(OWNED_LIST_ID, printingId, edition, (current) => current + 1)}
+        onClick={() =>
+          void changeEntryQuantity(OWNED_LIST_ID, cardId, printingId, edition, (current) => current + 1)
+        }
       >
         +
       </button>
