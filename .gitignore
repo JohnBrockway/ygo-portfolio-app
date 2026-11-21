@@ -2,3 +2,4 @@ node_modules
 app/public/mock-data/*
 .devcontainer/
 .env
+package-lock.json

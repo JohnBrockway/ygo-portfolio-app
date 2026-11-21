@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { refreshBinders, useLiveBinders } from "../data/binders";
 import { refreshLists, useLiveLists } from "../data/lists";
+import { AccountControl } from "./AccountControl";
 import { ErrorBanner } from "./ErrorBanner";
 import { ErrorBoundary } from "./ErrorBoundary";
 
@@ -26,6 +27,7 @@ export function AppShell() {
             {item.label}
           </NavLink>
         ))}
+        <AccountControl />
       </nav>
       <main className="content">
         <ErrorBanner what="lists" state={listsState} retry={refreshLists} />
