@@ -184,9 +184,14 @@ export function removeLastPageFromBinder(binderId: string): Promise<BinderSaveRe
 
 // Adds one card to the binder directly (not from a list), not placed in any slot. Adding the same printing + edition
 // again adds another card. The card shows up once it has been saved.
-export function addCardToBinder(binderId: string, printingId: string, edition: Edition): Promise<BinderSaveResult> {
+export function addCardToBinder(
+  binderId: string,
+  cardId: string,
+  printingId: string,
+  edition: Edition,
+): Promise<BinderSaveResult> {
   return bindersStore.enqueueChange("Couldn't add card to binder", async () => {
-    const card = await addCardToBinderInDatabase(binderId, printingId, edition);
+    const card = await addCardToBinderInDatabase(binderId, cardId, printingId, edition);
     applyCards([card]);
     bindersStore.notifyOtherTabs();
     return SAVED_WITHOUT_RECORD;

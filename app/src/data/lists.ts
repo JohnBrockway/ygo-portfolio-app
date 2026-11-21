@@ -118,8 +118,9 @@ export function getListEntries(listsState: ListsState, listId: string): readonly
   return getGroup(listsState.byList, listId);
 }
 
+// Identifies an entry the same way the database does (its key: list, card, printing, edition).
 function getEntryKey(entry: ListEntryRecord): string {
-  return JSON.stringify([entry.listId, entry.printingId, entry.edition]);
+  return JSON.stringify([entry.listId, entry.cardId, entry.printingId, entry.edition]);
 }
 
 // Puts a committed entry into memory, in place of memory's copy of the same entry if it has one. Nothing is written to
@@ -152,19 +153,21 @@ function applyList(list: ListRecord): void {
   listsStore.setState(makeState(state.status, state.error, activeLists, activeEntries));
 }
 
-// Changes how many of this printing's edition are on the list (0 removes it). `change` gets the quantity the
+// Changes how many of this printing's edition are on the list (0 removes it). `cardId` is the card the printing
+// belongs to (it has to be the right one, see ListEntryRecord). `change` gets the quantity the
 // database has right now and returns the new one: (current) => current + 1, or () => 1 to put it on a list.
 // The database keeps the result between 0 and the list's maximum (1 on every list except Owned).
 // The new quantity shows up once it has been saved. "saved" also covers the database already holding the quantity
 // that was asked for, in which case nothing is written.
 export function changeEntryQuantity(
   listId: string,
+  cardId: string,
   printingId: string,
   edition: Edition,
   change: (current: number) => number,
 ): Promise<SaveResult> {
   return listsStore.enqueueChange("Couldn't save list entry", async () => {
-    const entry = await changeEntryQuantityInDatabase(listId, printingId, edition, change);
+    const entry = await changeEntryQuantityInDatabase(listId, cardId, printingId, edition, change);
     if (entry !== null) {
       applyEntry(entry);
       listsStore.notifyOtherTabs();

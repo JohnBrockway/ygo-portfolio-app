@@ -67,9 +67,15 @@ export interface SlotPlacement {
   slotIndex: number;
 }
 
+// Every card so far is for a specific printing and edition. As with list entries (see ListEntryRecord), a card-only
+// card (the card, whichever printing and edition) will later be stored with printingId and edition both "", so adding
+// them needs no migration, and the types of printingId and edition widen then.
 export interface BinderCardRecord {
   id: string;
   binderId: string;
+  // The card that the printing belongs to. Always the card of printingId: the database can't
+  // check that, so callers have to pass the right one.
+  cardId: string;
   printingId: string;
   edition: Edition;
   // null for a card that was added to the binder directly, not from a list.
@@ -293,6 +299,7 @@ export async function removeLastPageFromBinderInDatabase(binderId: string): Prom
 
 function makeBinderCard(
   binderId: string,
+  cardId: string,
   printingId: string,
   edition: Edition,
   listOrigin: ListOrigin | null,
@@ -301,6 +308,7 @@ function makeBinderCard(
   return {
     id: makeRecordId(),
     binderId,
+    cardId,
     printingId,
     edition,
     listOrigin,
@@ -312,10 +320,12 @@ function makeBinderCard(
   };
 }
 
-// Adds one card to a binder directly (not from a list), not placed in any slot. Adding the same printing + edition
-// again adds another card. Resolves with the card as saved. A binder that doesn't exist or is deleted throws.
+// Adds one card to a binder directly (not from a list), not placed in any slot. `cardId` must be the card that
+// `printingId` belongs to (see BinderCardRecord). Adding the same printing + edition again adds another card. Resolves
+// with the card as saved. A binder that doesn't exist or is deleted throws.
 export async function addCardToBinderInDatabase(
   binderId: string,
+  cardId: string,
   printingId: string,
   edition: Edition,
 ): Promise<BinderCardRecord> {
@@ -323,14 +333,15 @@ export async function addCardToBinderInDatabase(
   return connection.runTransaction([BINDERS_STORE, CARDS_STORE], "readwrite", async (tx): Promise<BinderCardRecord> => {
     await getLiveBinderOrThrow(tx.objectStore(BINDERS_STORE), binderId);
 
-    const card = makeBinderCard(binderId, printingId, edition, null, Date.now());
+    const card = makeBinderCard(binderId, cardId, printingId, edition, null, Date.now());
     await requestToPromise(tx.objectStore(CARDS_STORE).add(card));
     return card;
   });
 }
 
-function makeCopyKey(printingId: string, edition: Edition, copyIndex: number): string {
-  return JSON.stringify([printingId, edition, copyIndex]);
+// Identifies one copy of an entry the way entries are identified (card, printing, edition), plus its copy number.
+function makeCopyKey(cardId: string, printingId: string, edition: Edition, copyIndex: number): string {
+  return JSON.stringify([cardId, printingId, edition, copyIndex]);
 }
 
 // Adds the cards a list holds that the binder doesn't have yet. Each copy on the list (an Owned entry with quantity 2
@@ -360,7 +371,7 @@ export async function addListCardsToBinderInDatabase(
     const copiesAlreadyAdded = new Set<string>();
     for (const card of binderCards) {
       if (!card.deleted && card.listOrigin !== null && card.listOrigin.listId === listId) {
-        copiesAlreadyAdded.add(makeCopyKey(card.printingId, card.edition, card.listOrigin.copyIndex));
+        copiesAlreadyAdded.add(makeCopyKey(card.cardId, card.printingId, card.edition, card.listOrigin.copyIndex));
       }
     }
 
@@ -368,8 +379,10 @@ export async function addListCardsToBinderInDatabase(
     const addedCards: BinderCardRecord[] = [];
     for (const entry of entries) {
       for (let copyIndex = 0; copyIndex < entry.quantity; copyIndex++) {
-        if (!copiesAlreadyAdded.has(makeCopyKey(entry.printingId, entry.edition, copyIndex))) {
-          addedCards.push(makeBinderCard(binderId, entry.printingId, entry.edition, { listId, copyIndex }, now));
+        if (!copiesAlreadyAdded.has(makeCopyKey(entry.cardId, entry.printingId, entry.edition, copyIndex))) {
+          addedCards.push(
+            makeBinderCard(binderId, entry.cardId, entry.printingId, entry.edition, { listId, copyIndex }, now),
+          );
         }
       }
     }

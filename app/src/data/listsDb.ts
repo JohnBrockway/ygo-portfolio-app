@@ -44,8 +44,13 @@ export interface ListRecord {
   dirty: number;
 }
 
+// cardId is currently passed for future proofing; when we want to support marking generic cards instead of specific
+// printings (ex. I want *any* copy of Dark Magician, as opposed to I want LOB-005 1st Ed.), we can key the IDB entry
+// with printingId & edition being "" (IDB doesn't allow null keys, but will allow the empty string)
 export interface ListEntryRecord {
   listId: string;
+  // Always the card of printingId: the database can't check that, so callers have to pass the right one.
+  cardId: string;
   printingId: string;
   edition: Edition;
   // Owned list: number of copies. Every other list: always 1.
@@ -72,7 +77,7 @@ function upgradeSchema(db: IDBDatabase, oldVersion: number): void {
   // Each future schema change adds another "if (oldVersion < N)" block here.
   if (oldVersion < 1) {
     createTrackedStore(db, LISTS_STORE, "id");
-    createTrackedStore(db, ENTRIES_STORE, ["listId", "printingId", "edition"]);
+    createTrackedStore(db, ENTRIES_STORE, ["listId", "cardId", "printingId", "edition"]);
   }
 }
 
@@ -133,8 +138,8 @@ async function getMutableListOrThrow(listStore: IDBObjectStore, listId: string):
 
 // Every entry of the list, removed ones included.
 function getEntriesOfList(entryStore: IDBObjectStore, listId: string): Promise<ListEntryRecord[]> {
-  // Entry keys are arrays: [listId, printingId, edition]. IndexedDB sorts keys by comparing them element by element
-  // (an array that is a prefix of another sorts first), and any array sorts after any string. So:
+  // Entry keys are arrays: [listId, cardId, printingId, edition]. IndexedDB sorts keys by comparing them element by
+  // element (an array that is a prefix of another sorts first), and any array sorts after any string. So:
   // - [listId] is below every key of this list (same first element, but shorter), and
   // - [listId, []] is above every key of this list (same first element, then an array in the place where real keys
   //   have a string, arrays being sorted above strings as a rule).
@@ -150,12 +155,14 @@ function getMaxQuantity(listId: string): number {
 
 // Changes one entry's quantity inside a single transaction, so the current quantity is read and the new one written
 // with nothing able to write in between, even from another tab (IndexedDB runs transactions that write to the same
-// store one at a time, across every tab). `change` gets the current quantity (0 if the entry isn't on the list) and
+// store one at a time, across every tab). `cardId` must be the card that `printingId` belongs to (see ListEntryRecord).
+// `change` gets the current quantity (0 if the entry isn't on the list) and
 // returns the new one, which is kept between 0 and the list's maximum. Below 0 is clamped quietly, because a stale
 // screen can ask for it (another tab already removed the entry). Above the maximum is a mistake in the caller, so it
 // is clamped too but logged, should be impossible. Resolves with the entry as saved, or null if nothing needed saving.
 export async function changeEntryQuantityInDatabase(
   listId: string,
+  cardId: string,
   printingId: string,
   edition: Edition,
   change: (current: number) => number,
@@ -165,7 +172,9 @@ export async function changeEntryQuantityInDatabase(
     await getLiveListOrThrow(tx.objectStore(LISTS_STORE), listId);
 
     const store = tx.objectStore(ENTRIES_STORE);
-    const existing: ListEntryRecord | undefined = await requestToPromise(store.get([listId, printingId, edition]));
+    const existing: ListEntryRecord | undefined = await requestToPromise(
+      store.get([listId, cardId, printingId, edition]),
+    );
     const current = existing === undefined ? 0 : existing.quantity;
 
     const wanted = change(current);
@@ -178,7 +187,15 @@ export async function changeEntryQuantityInDatabase(
       return null;
     }
 
-    const entry: ListEntryRecord = { listId, printingId, edition, quantity, updatedAt: Date.now(), dirty: 1 };
+    const entry: ListEntryRecord = {
+      listId,
+      cardId,
+      printingId,
+      edition,
+      quantity,
+      updatedAt: Date.now(),
+      dirty: 1,
+    };
     await requestToPromise(store.put(entry));
     return entry;
   });
