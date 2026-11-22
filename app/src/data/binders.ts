@@ -94,6 +94,10 @@ export const refreshBinders = bindersStore.refresh;
 // Dev tool: wipes the binders in the database, then reloads memory from it.
 export const clearBinders = bindersStore.clear;
 
+// Tells the other tabs to reload the binders from the database. For the sync layer, which changes the database without
+// going through the functions below (see MemoryStore.notifyOtherTabs).
+export const notifyOtherTabsOfBinders = bindersStore.notifyOtherTabs;
+
 // Every card in the binder (none removed), placed or not, in no particular order.
 export function getBinderCards(bindersState: BindersState, binderId: string): readonly BinderCardRecord[] {
   return getGroup(bindersState.byBinder, binderId);

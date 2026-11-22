@@ -1,9 +1,12 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { refreshBinders, useLiveBinders } from "../data/binders";
 import { refreshLists, useLiveLists } from "../data/lists";
+import { syncNow, useLiveSyncStatus } from "../data/sync";
 import { AccountControl } from "./AccountControl";
+import { AccountGuardBanner } from "./AccountGuardBanner";
 import { ErrorBanner } from "./ErrorBanner";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { SyncIndicator } from "./SyncIndicator";
 
 const NAV_ITEMS = [
   { to: "/sets", label: "Sets" },
@@ -17,6 +20,7 @@ export function AppShell() {
   const location = useLocation();
   const listsState = useLiveLists();
   const bindersState = useLiveBinders();
+  const syncStatus = useLiveSyncStatus();
 
   return (
     <div className="shell">
@@ -28,10 +32,21 @@ export function AppShell() {
           </NavLink>
         ))}
         <AccountControl />
+        <SyncIndicator />
       </nav>
       <main className="content">
         <ErrorBanner what="lists" state={listsState} retry={refreshLists} />
         <ErrorBanner what="binders" state={bindersState} retry={refreshBinders} />
+        <AccountGuardBanner />
+        <ErrorBanner
+          what="changes"
+          message="Couldn't upload your changes to the cloud. They are safe on this device and will be uploaded by the next successful sync."
+          state={{
+            status: syncStatus.kind === "error" ? "error" : "ready",
+            error: syncStatus.kind === "error" ? syncStatus.message : null,
+          }}
+          retry={syncNow}
+        />
         <ErrorBoundary key={location.pathname}>
           <Outlet />
         </ErrorBoundary>

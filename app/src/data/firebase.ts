@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { initializeFirestore, memoryLocalCache } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCf3ibM-uFnv8JDaCwcW9jN4X_v1WChjz4",
@@ -14,3 +15,7 @@ export const firebaseApp = initializeApp(firebaseConfig);
 
 // Firebase Auth keeps the signed-in user in the browser (IndexedDB), so sign-in survives reload and is shared across tabs.
 export const firebaseAuth = getAuth(firebaseApp);
+
+// memoryLocalCache, not persistent, only for sync operations. Out custom IndexedDB is the locally persistent copy, not managed
+// by Firestore.
+export const firestore = initializeFirestore(firebaseApp, { localCache: memoryLocalCache() });

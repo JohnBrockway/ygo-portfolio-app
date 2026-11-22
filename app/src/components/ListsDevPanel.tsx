@@ -3,6 +3,7 @@ import { isStoragePersisted } from "../data/indexedDb";
 import { clearLists } from "../data/lists";
 import { loadListsFromDatabase } from "../data/listsDb";
 import type { ListsData } from "../data/listsDb";
+import { resetLastPulledAt } from "../data/sync";
 
 // Dev-only readout of the local lists database.
 export function ListsDevPanel() {
@@ -31,6 +32,8 @@ export function ListsDevPanel() {
     }
     try {
       await clearLists();
+      // Pulls only fetch what changed since the last one, which would skip everything just wiped.
+      await resetLastPulledAt(["lists", "listEntries"]);
     } catch (caught) {
       setError(String(caught));
     }

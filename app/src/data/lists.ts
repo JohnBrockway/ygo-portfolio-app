@@ -97,6 +97,10 @@ export const refreshLists = listsStore.refresh;
 // Dev tool: wipes the lists in the database, then reloads memory from it.
 export const clearLists = listsStore.clear;
 
+// Tells the other tabs to reload the lists from the database. For the sync layer, which changes the database without
+// going through the functions below (see MemoryStore.notifyOtherTabs).
+export const notifyOtherTabsOfLists = listsStore.notifyOtherTabs;
+
 export function getEntryQuantity(
   listsState: ListsState,
   listId: string,
