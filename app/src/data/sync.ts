@@ -8,22 +8,32 @@ import {
   refreshBinders,
   useLiveBindersDirtyCount,
 } from "./binders";
-import { loadDirtyBindersDataFromDatabase, markBindersDataSyncedInDatabase } from "./bindersDb";
+import {
+  applyRemoteBindersDataToDatabase,
+  loadDirtyBindersDataFromDatabase,
+  markBindersDataSyncedInDatabase,
+} from "./bindersDb";
+import type { BinderCardRecord, BinderRecord } from "./bindersDb";
 import { clearLists, notifyOtherTabsOfLists, refreshLists, useLiveListsDirtyCount } from "./lists";
-import { loadDirtyListsDataFromDatabase, markListsDataSyncedInDatabase } from "./listsDb";
-import type { ListEntryRecord } from "./listsDb";
-import type { TrackedRecord } from "./recordConventions";
-import { pushDocs, RemoteTimeoutError } from "./remoteStore";
+import {
+  applyRemoteListsDataToDatabase,
+  loadDirtyListsDataFromDatabase,
+  markListsDataSyncedInDatabase,
+} from "./listsDb";
+import type { ListEntryRecord, ListRecord } from "./listsDb";
+import type { RemoteRecord, TrackedRecord } from "./recordConventions";
+import { pullDocs, pushDocs, RemoteTimeoutError } from "./remoteStore";
 import type { RemoteDoc } from "./remoteStore";
-import { changeSyncMetaInDatabase } from "./syncDb";
+import { changeSyncMetaInDatabase, loadSyncMetaFromDatabase } from "./syncDb";
 import type { SyncCollection } from "./syncDb";
 
-// The sync layer: decides what to upload and when, and keeps the state the sync indicator shows. It is the only caller
-// of the sync-only database functions (mark...SyncedInDatabase, and from Phase 5 apply...ToDatabase), and the only one
-// that reads or changes the sync meta (syncDb.ts). Components should only ever read through useLiveSyncStatus, and
-// act through syncNow, discardLocalDataAndUseAccount and resetLastPulledAt.
+// The sync layer: decides what to download and upload and when, and keeps the state the sync indicator shows. It is the
+// only caller of the sync-only database functions (mark...SyncedInDatabase and apply...ToDatabase), and the only one
+// that changes the sync meta (syncDb.ts). Components should only ever read through useLiveSyncStatus, and act through
+// syncNow, discardLocalDataAndUseAccount and resetLastPulledAt.
 //
-// Phase 4 is push only: dirty records go up, nothing comes down yet.
+// A sync pulls first, then pushes: what the cloud changed is merged in (last write wins, per record) before this
+// device's changes go up over it.
 
 // --- What the indicator shows ---
 
@@ -143,6 +153,82 @@ export function getEntryDocId(entry: ListEntryRecord): string {
   return [entry.listId, entry.cardId, entry.printingId, entry.edition].map(encodeURIComponent).join("|");
 }
 
+// --- Pulling ---
+
+// What a pull of one collection found, ready to apply.
+interface PulledCollection<T extends TrackedRecord> {
+  collection: SyncCollection;
+  records: RemoteRecord<T>[];
+  newestSyncedAt: number | null;
+}
+
+// The records the downloaded documents hold. The cast is the one place that trusts the cloud's data to have the shape of
+// the record type: only this app writes there, and the merge reads a record's key from its fields and throws if a key
+// part is missing. `updatedAt` is checked here as well, because a missing or wrong one would silently win or lose
+// every merge.
+function toRemoteRecords<T extends TrackedRecord>(
+  collection: SyncCollection,
+  docs: readonly RemoteDoc[],
+): RemoteRecord<T>[] {
+  return docs.map((remoteDoc) => {
+    const { updatedAt } = remoteDoc.fields as { updatedAt?: unknown };
+    if (typeof updatedAt !== "number") {
+      throw new Error(`The cloud's "${collection}" document "${remoteDoc.id}" has no valid updatedAt`);
+    }
+    return remoteDoc.fields as unknown as RemoteRecord<T>;
+  });
+}
+
+// Downloads what has changed in one cloud collection since this device last pulled it (all of it on the first pull, or
+// after resetLastPulledAt). Nothing is stored here: see savePulledUpTo.
+async function pullCollection<T extends TrackedRecord>(
+  uid: string,
+  collection: SyncCollection,
+): Promise<PulledCollection<T>> {
+  const meta = await loadSyncMetaFromDatabase();
+  const pulled = await pullDocs(uid, collection, meta.lastPulledAt[collection]);
+  return { collection, records: toRemoteRecords<T>(collection, pulled.docs), newestSyncedAt: pulled.newestSyncedAt };
+}
+
+// Remembers how far each collection has been pulled, so the next pull starts there. Only to be called once what was
+// pulled has been applied: if this device stops in between, the same records are pulled and skipped as not newer next
+// time. A collection that found nothing keeps the time it had.
+async function savePulledUpTo(
+  pulledCollections: readonly { collection: SyncCollection; newestSyncedAt: number | null }[],
+): Promise<void> {
+  await changeSyncMetaInDatabase((current) => {
+    const lastPulledAt = { ...current.lastPulledAt };
+    for (const { collection, newestSyncedAt } of pulledCollections) {
+      if (newestSyncedAt !== null) {
+        lastPulledAt[collection] = newestSyncedAt;
+      }
+    }
+    return { ...current, lastPulledAt };
+  });
+}
+
+// Download lists and list entries that have changed in the cloud and merge them into the database. Memory isn't told
+// here: runSync reloads it afterwards.
+async function pullRemoteLists(uid: string): Promise<void> {
+  const lists = await pullCollection<ListRecord>(uid, "lists");
+  const entries = await pullCollection<ListEntryRecord>(uid, "listEntries");
+  if (lists.records.length > 0 || entries.records.length > 0) {
+    await applyRemoteListsDataToDatabase({ lists: lists.records, entries: entries.records });
+  }
+  await savePulledUpTo([lists, entries]);
+}
+
+// Download binders and binder entries that have changed in the cloud and merge them into the database. Memory isn't told
+// here: runSync reloads it afterwards.
+async function pullRemoteBinders(uid: string): Promise<void> {
+  const binders = await pullCollection<BinderRecord>(uid, "binders");
+  const cards = await pullCollection<BinderCardRecord>(uid, "binderCards");
+  if (binders.records.length > 0 || cards.records.length > 0) {
+    await applyRemoteBindersDataToDatabase({ binders: binders.records, cards: cards.records });
+  }
+  await savePulledUpTo([binders, cards]);
+}
+
 // --- Pushing ---
 
 // Uploads every list and entry that has changed here, then marks them synced. A record changed while the upload was
@@ -209,7 +295,7 @@ function describeFailure(error: unknown): SyncState {
     return {
       ...base,
       phase: "error",
-      error: "The cloud refused the upload. Check that you are signed in and that the Firestore rules are published.",
+      error: "The cloud refused the request. Check that you are signed in and that the Firestore rules are published.",
     };
   }
   if (error instanceof FirebaseError && error.code === "resource-exhausted") {
@@ -241,6 +327,8 @@ async function runSync(): Promise<void> {
   let outcome: SyncState;
   try {
     if (await claimDevice(uid)) {
+      await pullRemoteLists(uid);
+      await pullRemoteBinders(uid);
       await pushDirtyLists(uid);
       await pushDirtyBinders(uid);
       const now = Date.now();
@@ -253,8 +341,9 @@ async function runSync(): Promise<void> {
     outcome = describeFailure(error);
   }
 
-  // Marking records as synced changed the database behind memory's back: reloading (even after a failure, which may
-  // have got part of the way) brings the dirty counts up to date, here and in the other tabs.
+  // Merging pulled records in and marking pushed ones as synced changed the database behind memory's back: reloading
+  // (even after a failure, which may have got part of the way) brings memory and the dirty counts up to date, here and
+  // in the other tabs.
   await Promise.all([refreshLists(), refreshBinders()]);
   notifyOtherTabsOfLists();
   notifyOtherTabsOfBinders();
@@ -263,8 +352,9 @@ async function runSync(): Promise<void> {
 
 let runningSync: Promise<void> | null = null;
 
-// Uploads everything that has changed on this device. While a sync is running, asking again joins it instead of
-// starting a second one. Does nothing when signed out. It never rejects: the result is in useLiveSyncStatus.
+// Downloads what has changed in the cloud, then uploads everything that has changed on this device. While a sync is
+// running, asking again joins it instead of starting a second one. Does nothing when signed out. It never rejects: the
+// result is in useLiveSyncStatus.
 export function syncNow(): Promise<void> {
   if (runningSync === null) {
     runningSync = runSync().finally(() => {
@@ -276,9 +366,9 @@ export function syncNow(): Promise<void> {
 
 // --- Account guard choices ---
 
-// For "account-mismatch": throws this device's lists and binders away and makes the signed-in account their owner, so
-// the account's own data is what syncs here. Whatever was only on this device is lost, so the caller has to have asked
-// the user first.
+// For "account-mismatch": throws this device's lists and binders away and makes the signed-in account their owner, then
+// syncs, so the account's own data comes down. Whatever was only on this device is lost, so the caller has to have
+// asked the user first.
 //
 // The data goes first and the owner second: if this stops halfway, the device is empty but still belongs to the old
 // account, so the guard just asks again. The other way round would leave the old account's lists on a device that
@@ -304,7 +394,11 @@ export async function discardLocalDataAndUseAccount(): Promise<void> {
     setSyncState({ phase: "idle", error: null, mismatch: null, lastSyncedAt: null });
   } catch (error) {
     setSyncState({ ...describeFailure(error), mismatch: state.mismatch });
+    return;
   }
+  // The point of choosing this account is having its data here, and the device is empty now, so pull it straight away
+  // (lastPulledAt was reset above, so this is a full pull) rather than leave the indicator saying "Synced" over nothing.
+  await syncNow();
 }
 
 // Forgets when the given collections were last pulled, so that the next pull of them is a full one. Needed whenever the
