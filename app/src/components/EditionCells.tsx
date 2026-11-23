@@ -1,8 +1,8 @@
 import { editionLabel } from "../data/editions";
 import type { Edition } from "../data/types";
 import { AddToListButton } from "./AddToListButton";
+import { OneClickListButton } from "./OneClickListButton";
 import { OwnedStepper } from "./OwnedStepper";
-import { WishlistButton } from "./WishlistButton";
 
 // One cell per edition the set has, side by side, each with the owned stepper and the list buttons.
 export function EditionCells({
@@ -33,7 +33,7 @@ export function EditionCells({
             <div className="edition-label">{label}</div>
             <OwnedStepper cardId={cardId} printingId={printingId} edition={edition} label={label} />
             <div className="list-buttons">
-              <WishlistButton cardId={cardId} printingId={printingId} edition={edition} label={label} />
+              <OneClickListButton cardId={cardId} printingId={printingId} edition={edition} label={label} />
               <AddToListButton cardId={cardId} printingId={printingId} edition={edition} label={label} />
             </div>
           </li>

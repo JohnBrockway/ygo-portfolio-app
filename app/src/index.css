@@ -1527,6 +1527,11 @@ a {
   color: var(--heart);
 }
 
+/* The one-click button when it adds to a list of the user's own: it shows a bookmark, not the Wishlist heart. */
+.list-button-custom[aria-pressed="true"] {
+  color: var(--accent);
+}
+
 /* The wishlist heart and the "more lists" button side by side: the heart takes the width the trigger leaves. */
 .list-buttons {
   display: flex;
@@ -1588,7 +1593,16 @@ a {
   list-style: none;
 }
 
+/* One row of the list picker: the list's checkbox, and on its right the button that makes it the one-click list. */
+.list-choice-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .list-choice {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -1603,6 +1617,20 @@ a {
   height: 1.25rem;
   margin: 0;
   accent-color: var(--accent);
+}
+
+.one-click-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2rem;
+  padding: 0;
+}
+
+.one-click-choice[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .account-dialog-button {

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { canChangeLists, getEntryQuantity, useLiveLists } from "../data/lists";
+import { OWNED_LIST_ID } from "../data/listsDb";
+import { useLiveOneClickList } from "../data/oneClickList";
 import type { Edition } from "../data/types";
 import { AddToListDialog } from "./AddToListDialog";
 import { Icon } from "./Icon";
@@ -13,9 +15,10 @@ function ListPlusIcon() {
   );
 }
 
-// Button next to the wishlist heart that opens the list picker (AddToListDialog) for this printing's edition. It is
-// tinted when the edition is on any list of the user's own (the heart already shows Wishlist).
-// Takes the same props as WishlistButton.
+// Button next to the one-click button (OneClickListButton) that opens the list picker (AddToListDialog) for this
+// printing's edition. It is tinted when the edition is on a list that nothing else on the cell shows: any list except
+// Owned (which has its own stepper) and the one-click list (whose button shows its own state).
+// Takes the same props as OneClickListButton.
 export function AddToListButton({
   cardId,
   printingId,
@@ -28,9 +31,13 @@ export function AddToListButton({
   label: string;
 }) {
   const lists = useLiveLists();
+  const oneClickList = useLiveOneClickList();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const isOnAnyCustomList = lists.activeLists.some(
-    (list) => !list.builtIn && getEntryQuantity(lists, list.id, printingId, edition) > 0,
+  const isOnListBesidesOneClick = lists.activeLists.some(
+    (list) =>
+      list.id !== OWNED_LIST_ID &&
+      list.id !== oneClickList?.id &&
+      getEntryQuantity(lists, list.id, printingId, edition) > 0,
   );
 
   let dialog: ReactNode = null;
@@ -50,7 +57,7 @@ export function AddToListButton({
     <>
       <button
         type="button"
-        className={`action-button list-button list-menu-trigger${isOnAnyCustomList ? " list-menu-trigger-on" : ""}`}
+        className={`action-button list-button list-menu-trigger${isOnListBesidesOneClick ? " list-menu-trigger-on" : ""}`}
         aria-label={`More lists, ${label}`}
         aria-haspopup="dialog"
         disabled={!canChangeLists(lists)}
