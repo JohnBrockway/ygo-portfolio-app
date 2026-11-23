@@ -1,29 +1,39 @@
 import { syncNow, useLiveSyncStatus } from "../data/sync";
 import type { SyncStatus } from "../data/sync";
 
+// The statuses that get a button (the others are left out, see SyncIndicator).
+type ButtonStatus = Exclude<SyncStatus, { kind: "loading" } | { kind: "signed-out" } | { kind: "account-mismatch" }>;
+
 function describeLastSync(status: SyncStatus): string | undefined {
-  if (status.kind === "idle" && status.lastSyncedAt !== null) {
+  if (status.kind === "idle") {
     return `Last synced at ${new Date(status.lastSyncedAt).toLocaleTimeString()}`;
   }
   return undefined;
 }
 
-function getButtonLabel(status: SyncStatus): string {
+// Every status is listed, with no default, so that a status added later doesn't quietly read as "Synced": the compiler
+// asks for its label here.
+function getButtonLabel(status: ButtonStatus): string {
   switch (status.kind) {
+    case "syncing":
+      return "Syncing…";
+    case "not-synced-yet":
+      return "Sync now";
     case "dirty":
       return `${status.count} unsynced`;
     case "offline":
       return "Offline, try again";
     case "error":
       return "Sync failed, try again";
-    default:
+    case "idle":
       return "Synced";
   }
 }
 
 // Shows how the data on this device stands against the cloud, in the nav next to the account control: how many changes
-// are waiting to be uploaded, and clicking it uploads them now. Failures are shown by the ErrorBanner, and an account
-// that isn't the device's owner by the AccountGuardBanner: here they only say that syncing isn't happening.
+// are waiting to be uploaded, and clicking it syncs now (downloads what changed in the cloud, then uploads). It only
+// says "Synced" once a sync has finished. Failures are shown by the ErrorBanner, and an account that isn't the device's
+// owner by the AccountGuardBanner: here they only say that syncing isn't happening.
 export function SyncIndicator() {
   const status = useLiveSyncStatus();
 
@@ -47,7 +57,7 @@ export function SyncIndicator() {
           title={describeLastSync(status)}
           onClick={() => void syncNow()}
         >
-          {status.kind === "syncing" ? "Syncing…" : getButtonLabel(status)}
+          {getButtonLabel(status)}
         </button>
       )}
     </div>

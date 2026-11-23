@@ -39,7 +39,11 @@ import type { SyncCollection } from "./syncDb";
 
 // - "loading": Firebase hasn't said yet who is signed in.
 // - "signed-out": nothing is synced, the data only lives on this device.
-// - "idle": signed in and nothing is waiting to be uploaded.
+// - "not-synced-yet": signed in, but no sync has finished since signing in (or since the app loaded), so this device
+//   doesn't know yet what the cloud holds. A sync starts by itself at both moments, so this is what shows until it
+//   has finished, or if it never got going. Only "idle" says the device is in step.
+// - "idle": signed in, the last sync finished at `lastSyncedAt` (by this device's clock), and nothing has changed
+//   here since.
 // - "dirty": signed in, and `count` lists, binders, entries and cards are waiting to be uploaded.
 // - "syncing": a sync is running.
 // - "offline": the browser is offline, or the cloud didn't answer in time. Not an error: nothing is lost.
@@ -49,7 +53,8 @@ import type { SyncCollection } from "./syncDb";
 export type SyncStatus =
   | { kind: "loading" }
   | { kind: "signed-out" }
-  | { kind: "idle"; lastSyncedAt: number | null }
+  | { kind: "not-synced-yet" }
+  | { kind: "idle"; lastSyncedAt: number }
   | { kind: "dirty"; count: number }
   | { kind: "syncing" }
   | { kind: "offline" }
@@ -89,7 +94,8 @@ function subscribeToSync(listener: () => void): () => void {
   };
 }
 
-// A new sign-in starts with a clean slate: an error or "offline" from the previous account says nothing about this one.
+// A new sign-in starts with a clean slate: an error or "offline" from the previous account says nothing about this one,
+// and neither does when that account last synced. It also starts a sync straight away.
 let lastSeenUid = getAuthState().user?.uid ?? null;
 subscribeToAuth(() => {
   const uid = getAuthState().user?.uid ?? null;
@@ -98,7 +104,10 @@ subscribeToAuth(() => {
   }
   lastSeenUid = uid;
   if (state.phase !== "syncing") {
-    setSyncState({ ...state, phase: "idle", error: null });
+    setSyncState({ ...state, phase: "idle", error: null, lastSyncedAt: null });
+  }
+  if (uid !== null) {
+    void (runningSync ?? Promise.resolve()).then(syncNow);
   }
 });
 
@@ -123,6 +132,9 @@ export function deriveSyncStatus(auth: AuthState, syncState: SyncState, dirtyCou
   }
   if (dirtyCount > 0) {
     return { kind: "dirty", count: dirtyCount };
+  }
+  if (syncState.lastSyncedAt === null) {
+    return { kind: "not-synced-yet" };
   }
   return { kind: "idle", lastSyncedAt: syncState.lastSyncedAt };
 }
@@ -187,7 +199,11 @@ async function pullCollection<T extends TrackedRecord>(
 ): Promise<PulledCollection<T>> {
   const meta = await loadSyncMetaFromDatabase();
   const pulled = await pullDocs(uid, collection, meta.lastPulledAt[collection]);
-  return { collection, records: toRemoteRecords<T>(collection, pulled.docs), newestSyncedAt: pulled.newestSyncedAt };
+  return {
+    collection,
+    records: toRemoteRecords<T>(collection, pulled.docs),
+    newestSyncedAt: pulled.newestSyncedAt,
+  };
 }
 
 // Remembers how far each collection has been pulled, so the next pull starts there. Only to be called once what was

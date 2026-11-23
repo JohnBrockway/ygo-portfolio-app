@@ -40,7 +40,7 @@ export function AppShell() {
         <AccountGuardBanner />
         <ErrorBanner
           what="changes"
-          message="Couldn't upload your changes to the cloud. They are safe on this device and will be uploaded by the next successful sync."
+          message="Couldn't sync with the cloud. Your changes are safe on this device and will be uploaded by the next successful sync."
           state={{
             status: syncStatus.kind === "error" ? "error" : "ready",
             error: syncStatus.kind === "error" ? syncStatus.message : null,
