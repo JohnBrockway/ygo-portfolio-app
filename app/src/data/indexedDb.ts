@@ -19,6 +19,11 @@ function transactionDone(tx: IDBTransaction): Promise<void> {
   });
 }
 
+// Runs when a database is first created or its version is raised. It is where the caller creates or changes its object
+// stores, and `tx` is the upgrade transaction, for changing the records already in them. Only requests made on `tx` (and
+// callbacks of those requests) are possible here: the transaction closes as soon as nothing is waiting on it.
+export type UpgradeFunction = (db: IDBDatabase, oldVersion: number, tx: IDBTransaction) => void;
+
 // An open connection to one IndexedDB database.
 export class IndexedDbConnection {
   private readonly db: IDBDatabase;
@@ -27,16 +32,17 @@ export class IndexedDbConnection {
     this.db = db;
   }
 
-  // `upgrade` runs when the database is first created or its version is raised.
-  // It is where the caller creates or changes its object stores.
-  static open(
-    name: string,
-    version: number,
-    upgrade: (db: IDBDatabase, oldVersion: number) => void,
-  ): Promise<IndexedDbConnection> {
+  // `upgrade` runs when the database is first created or its version is raised (see UpgradeFunction).
+  static open(name: string, version: number, upgrade: UpgradeFunction): Promise<IndexedDbConnection> {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(name, version);
-      request.onupgradeneeded = (event) => upgrade(request.result, event.oldVersion);
+      request.onupgradeneeded = (event) => {
+        // Always there while an upgrade runs; null only outside one.
+        if (request.transaction === null) {
+          throw new Error(`The upgrade of database "${name}" has no transaction`);
+        }
+        upgrade(request.result, event.oldVersion, request.transaction);
+      };
       request.onsuccess = () => resolve(new IndexedDbConnection(request.result));
       request.onerror = () => reject(request.error);
     });
@@ -97,7 +103,7 @@ export async function isStoragePersisted(): Promise<boolean> {
 export function createConnectionGetter(
   name: string,
   version: number,
-  upgrade: (db: IDBDatabase, oldVersion: number) => void,
+  upgrade: UpgradeFunction,
   prepare?: (connection: IndexedDbConnection) => Promise<void>,
 ): () => Promise<IndexedDbConnection> {
   let connectionPromise: Promise<IndexedDbConnection> | null = null;

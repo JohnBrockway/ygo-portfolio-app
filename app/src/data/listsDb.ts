@@ -28,7 +28,7 @@ import type { Edition } from "./types";
 // fine anywhere.
 
 const DB_NAME = "ygo-lists";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const LISTS_STORE = "lists";
 const ENTRIES_STORE = "entries";
@@ -65,6 +65,9 @@ export interface ListEntryRecord {
   // Owned list: number of copies. Every other list: always 1.
   // 0 means removed; the record is kept until the removal has been synced.
   quantity: number;
+  // The group the entry belongs to on its list, or null (see entryGroups.ts for what makes a group). Only lists other
+  // than Owned have groups. Set to null in the same write that removes the entry, so a removed entry never carries one.
+  groupId: string | null;
   updatedAt: number;
   dirty: number;
 }
@@ -88,12 +91,30 @@ export type SaveResult = RecordSaveResult<ListRecord>;
 
 // --- Opening the database ---
 
-function upgradeSchema(db: IDBDatabase, oldVersion: number): void {
+function upgradeSchema(db: IDBDatabase, oldVersion: number, tx: IDBTransaction): void {
   // Each future schema change adds another "if (oldVersion < N)" block here.
   if (oldVersion < 1) {
     createTrackedStore(db, LISTS_STORE, "id");
     createTrackedStore(db, ENTRIES_STORE, ["listId", "cardId", "printingId", "edition"]);
   }
+  if (oldVersion < 2) {
+    addGroupIdToEntries(tx);
+  }
+}
+
+// Version 2 gave every entry a groupId. Entries from before it get none (null), and are marked dirty so the next sync
+// uploads the field and the cloud's documents have it too. updatedAt stays as it was: nothing the user did changed, so
+// this must not win a merge against a real edit made on another device. (Removed entries still waiting to be synced are
+// already dirty.) Does nothing on a new database, which has no entries yet.
+function addGroupIdToEntries(tx: IDBTransaction): void {
+  const request = tx.objectStore(ENTRIES_STORE).openCursor();
+  request.onsuccess = () => {
+    const cursor = request.result;
+    if (cursor !== null) {
+      cursor.update({ ...cursor.value, groupId: null, dirty: 1 });
+      cursor.continue();
+    }
+  };
 }
 
 // Runs on every open and only adds what is missing, so new built-in lists never need a migration.
@@ -210,10 +231,13 @@ export async function changeEntryQuantityInDatabase(
       printingId,
       edition,
       quantity: 0,
+      groupId: null,
       updatedAt: 0,
       dirty: 0,
     };
-    const entry = changedRecord(baseEntry, { quantity }, Date.now());
+    // Removing an entry takes it out of its group in the same write (see ListEntryRecord.groupId).
+    const changes = quantity === 0 ? { quantity, groupId: null } : { quantity };
+    const entry = changedRecord(baseEntry, changes, Date.now());
     await requestToPromise(store.put(entry));
     return entry;
   });
@@ -298,7 +322,7 @@ export async function deleteListInDatabase(listId: string): Promise<ListRecord> 
     const deletedList = changedRecord(list, { deleted: true }, now);
     const removedEntries = listEntries
       .filter((entry) => entry.quantity > 0)
-      .map((entry) => changedRecord(entry, { quantity: 0 }, now));
+      .map((entry) => changedRecord(entry, { quantity: 0, groupId: null }, now));
 
     await Promise.all([requestToPromise(listStore.put(deletedList)), putAll(entryStore, removedEntries)]);
     return deletedList;

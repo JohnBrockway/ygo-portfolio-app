@@ -1,3 +1,5 @@
+import { findLiveGroups } from "./entryGroups";
+import type { EntryGroup } from "./entryGroups";
 import { getGroup, groupBy } from "./recordGroupingHelpers";
 import {
   changeEntryQuantityInDatabase,
@@ -28,6 +30,9 @@ export interface ListsState extends MemoryStoreState {
   // The active entries, grouped for lookups.
   byPrinting: ReadonlyMap<string, readonly ListEntryRecord[]>;
   byList: ReadonlyMap<string, readonly ListEntryRecord[]>;
+  // The live groups of the active entries (see entryGroups.ts), by list. Derived from activeEntries, never stored, and
+  // only groups of two or more: an entry left alone in its group is not in here.
+  liveGroupsByList: ReadonlyMap<string, readonly EntryGroup[]>;
 }
 
 // One edition of one printing, as held by the Owned list and by every other list. 
@@ -52,6 +57,7 @@ function makeState(
     activeEntries,
     byPrinting: groupBy(activeEntries, (entry) => entry.printingId),
     byList: groupBy(activeEntries, (entry) => entry.listId),
+    liveGroupsByList: groupBy(findLiveGroups(activeEntries), (group) => group.listId),
   };
 }
 
@@ -130,6 +136,12 @@ export function getEntryOwnership(listsState: ListsState, printingId: string, ed
 // Every entry on the list (none removed), in no particular order.
 export function getListEntries(listsState: ListsState, listId: string): readonly ListEntryRecord[] {
   return getGroup(listsState.byList, listId);
+}
+
+// Every live group on the list (two or more members each, see findLiveGroups), in the order of their first member. An
+// entry whose group has no other member left is not in any of them; it is still in getListEntries.
+export function getListGroups(listsState: ListsState, listId: string): readonly EntryGroup[] {
+  return getGroup(listsState.liveGroupsByList, listId);
 }
 
 // Identifies an entry the same way the database does (its key: list, card, printing, edition).
