@@ -17,10 +17,10 @@ import type { RecordSaveResult, RemoteRecord } from "./recordConventions";
 import type { Edition } from "./types";
 
 // The database layer for lists. Only lists.ts may call the functions that change data (changeEntryQuantityInDatabase,
-// createListInDatabase, renameListInDatabase, deleteListInDatabase, clearListsInDatabase): it keeps memory and the
-// other tabs in step with the database, and a direct call would skip that. Reading with loadListsFromDatabase is
-// fine anywhere (e.g. the dev panel). bindersDb.ts is the same layer for binders and is laid out the same way; what
-// both do alike lives in indexedDb.ts and recordConventions.ts.
+// setEntriesGroupsInDatabase, createListInDatabase, renameListInDatabase, deleteListInDatabase,
+// clearListsInDatabase): it keeps memory and the other tabs in step with the database, and a direct call would skip
+// that. Reading with loadListsFromDatabase is fine anywhere (e.g. the dev panel). bindersDb.ts is the same layer for
+// binders and is laid out the same way; what both do alike lives in indexedDb.ts and recordConventions.ts.
 //
 // The sync-only functions (markListsDataSyncedInDatabase, applyRemoteListsDataToDatabase) are the exception to the
 // above: only the sync layer calls them, and it brings memory and the other tabs up to date itself afterwards.
@@ -70,6 +70,14 @@ export interface ListEntryRecord {
   groupId: string | null;
   updatedAt: number;
   dirty: number;
+}
+
+// Puts entries in one group, or takes them out of their group (groupId null). Only the key of each entry is used (its
+// list, card, printing and edition): the database is read for the rest. An entry can only be in one assignment of a
+// call: it can't be given two groups at once.
+export interface GroupAssignment {
+  entries: readonly ListEntryRecord[];
+  groupId: string | null;
 }
 
 // Everything on disk, for loading into memory. Includes deleted lists, kept
@@ -183,6 +191,12 @@ function getEntriesOfList(entryStore: IDBObjectStore, listId: string): Promise<L
   return requestToPromise(entryStore.getAll(IDBKeyRange.bound([listId], [listId, []])));
 }
 
+// Identifies an entry the same way the database does (its key: list, card, printing, edition), as a string that can go
+// in a Set or Map.
+export function getEntryKey(entry: ListEntryRecord): string {
+  return JSON.stringify([entry.listId, entry.cardId, entry.printingId, entry.edition]);
+}
+
 // --- Operations ---
 
 function getMaxQuantity(listId: string): number {
@@ -240,6 +254,60 @@ export async function changeEntryQuantityInDatabase(
     const entry = changedRecord(baseEntry, changes, Date.now());
     await requestToPromise(store.put(entry));
     return entry;
+  });
+}
+
+// Changes which group entries of one list are in, for every assignment, inside a single transaction, so a change that
+// spans several groups (such as collapsing rarities) is all or nothing. Lists other than Owned only: Owned holds real
+// copies, so "any of these" makes no sense there. Owned, and lists that don't exist or are deleted, throw, as does an
+// entry of another list or one that appears more than once across the assignments (all of those are mistakes in the
+// caller). An entry that is not on the list any more is skipped quietly, because a stale screen can ask for it (another
+// tab already removed it). Only entries whose group actually changes are written. Resolves with those entries as saved,
+// empty if nothing needed saving.
+export async function setEntriesGroupsInDatabase(
+  listId: string,
+  assignments: readonly GroupAssignment[],
+): Promise<ListEntryRecord[]> {
+  if (listId === OWNED_LIST_ID) {
+    throw new Error("Entries on the Owned list can't be grouped");
+  }
+  const requests: { entry: ListEntryRecord; groupId: string | null }[] = [];
+  const requestedKeys = new Set<string>();
+  for (const assignment of assignments) {
+    for (const entry of assignment.entries) {
+      const key = getEntryKey(entry);
+      if (entry.listId !== listId) {
+        throw new Error(`Entry ${key} is not on list "${listId}"`);
+      }
+      if (requestedKeys.has(key)) {
+        throw new Error(`Entry ${key} is in more than one group assignment`);
+      }
+      requestedKeys.add(key);
+      requests.push({ entry, groupId: assignment.groupId });
+    }
+  }
+
+  const connection = await getListsConnection();
+  return connection.runTransaction([LISTS_STORE, ENTRIES_STORE], "readwrite", async (tx) => {
+    await getLiveListOrThrow(tx.objectStore(LISTS_STORE), listId);
+
+    const store = tx.objectStore(ENTRIES_STORE);
+    const existingEntries: (ListEntryRecord | undefined)[] = await Promise.all(
+      requests.map(({ entry }) => requestToPromise(store.get([listId, entry.cardId, entry.printingId, entry.edition]))),
+    );
+
+    const now = Date.now();
+    const changedEntries: ListEntryRecord[] = [];
+    requests.forEach(({ groupId }, index) => {
+      const existing = existingEntries[index];
+      if (existing === undefined || existing.quantity <= 0 || existing.groupId === groupId) {
+        return;
+      }
+      changedEntries.push(changedRecord(existing, { groupId }, now));
+    });
+
+    await putAll(store, changedEntries);
+    return changedEntries;
   });
 }
 

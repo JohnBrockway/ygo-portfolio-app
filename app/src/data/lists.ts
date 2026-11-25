@@ -7,11 +7,13 @@ import {
   countDirtyListsDataFromDatabase,
   createListInDatabase,
   deleteListInDatabase,
+  getEntryKey,
   loadListsFromDatabase,
   OWNED_LIST_ID,
   renameListInDatabase,
+  setEntriesGroupsInDatabase,
 } from "./listsDb";
-import type { ListEntryRecord, ListRecord, SaveResult } from "./listsDb";
+import type { GroupAssignment, ListEntryRecord, ListRecord, SaveResult } from "./listsDb";
 import { canChangeState, createMemoryStore, replaceActiveRecords } from "./memoryStore";
 import type { MemoryStoreState } from "./memoryStore";
 import { compareByOrder, SAVED_WITHOUT_RECORD } from "./recordConventions";
@@ -70,8 +72,8 @@ async function loadListsState(): Promise<ListsState> {
 }
 
 // Components should only ever read through useLiveLists (and useLiveListsDirtyCount, for how many records still have to
-// be synced), change entries through changeEntryQuantity and change lists through createList, renameList, and
-// deleteList.
+// be synced), change entries through changeEntryQuantity and setEntriesGroups, and change lists through createList,
+// renameList, and deleteList.
 const listsStore = createMemoryStore<ListsState>({
   name: "lists",
   initialState: makeState("loading", null, [], []),
@@ -144,18 +146,13 @@ export function getListGroups(listsState: ListsState, listId: string): readonly 
   return getGroup(listsState.liveGroupsByList, listId);
 }
 
-// Identifies an entry the same way the database does (its key: list, card, printing, edition).
-function getEntryKey(entry: ListEntryRecord): string {
-  return JSON.stringify([entry.listId, entry.cardId, entry.printingId, entry.edition]);
-}
-
-// Puts a committed entry into memory, in place of memory's copy of the same entry if it has one. Nothing is written to
+// Puts committed entries into memory, in place of memory's copy of each of them if it has one. Nothing is written to
 // the database here.
-function applyEntry(entry: ListEntryRecord): void {
+function applyEntries(entries: readonly ListEntryRecord[]): void {
   const state = listsStore.getState();
   const activeEntries = replaceActiveRecords(
     state.activeEntries,
-    [entry],
+    entries,
     getEntryKey,
     (committed) => committed.quantity > 0,
   );
@@ -195,7 +192,24 @@ export function changeEntryQuantity(
   return listsStore.enqueueChange("Couldn't save list entry", async () => {
     const entry = await changeEntryQuantityInDatabase(listId, cardId, printingId, edition, change);
     if (entry !== null) {
-      applyEntry(entry);
+      applyEntries([entry]);
+      listsStore.notifyOtherTabs();
+    }
+    return SAVED_WITHOUT_RECORD;
+  });
+}
+
+// Changes which group entries of a list are in (never the Owned list). Each assignment puts its entries in one group,
+// or takes them out of their group when its groupId is null. All assignments are saved together, so a change that spans
+// several groups either happens completely or not at all. Group ids come from makeRecordId (recordConventions.ts); an
+// entry can only be in one assignment. Entries that are no longer on the list are skipped, and so are entries already
+// in the group asked for, which counts as "saved" with nothing written. The new groups show up once they have been
+// saved.
+export function setEntriesGroups(listId: string, assignments: readonly GroupAssignment[]): Promise<SaveResult> {
+  return listsStore.enqueueChange("Couldn't save groups", async () => {
+    const entries = await setEntriesGroupsInDatabase(listId, assignments);
+    if (entries.length > 0) {
+      applyEntries(entries);
       listsStore.notifyOtherTabs();
     }
     return SAVED_WITHOUT_RECORD;
