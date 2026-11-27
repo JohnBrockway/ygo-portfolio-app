@@ -1,4 +1,5 @@
 import type { ListEntryRecord } from "./listsDb";
+import { makeRecordId } from "./recordConventions";
 
 // What a group is. Groups are not stored anywhere: the only thing on disk is the groupId of each entry (see
 // ListEntryRecord.groupId), and this file works out the groups from those.
@@ -27,4 +28,13 @@ export function findLiveGroups(activeEntries: readonly ListEntryRecord[]): Entry
     }
   }
   return [...groupsByKey.values()].filter((group) => group.members.length >= 2);
+}
+
+// The groupId for a group made out of these entries, none of which is in a live group. If exactly one of them still
+// carries the groupId of a group that has shrunk to it (a survivor), the new group takes that id over, so that whatever
+// was following that group (a binder's group card) goes on following it. Otherwise the group gets a new id.
+export function pickGroupIdForEntries(entries: readonly ListEntryRecord[]): string {
+  const survivorGroupIds = entries.flatMap((entry) => (entry.groupId === null ? [] : [entry.groupId]));
+  const [survivorGroupId] = survivorGroupIds;
+  return survivorGroupIds.length === 1 && survivorGroupId !== undefined ? survivorGroupId : makeRecordId();
 }

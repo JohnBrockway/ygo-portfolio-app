@@ -25,6 +25,10 @@ export interface RecordWithFoundPrinting<R extends PrintingEditionKey> {
   found: FoundPrinting | null;
 }
 
+export function getRecordName<R extends PrintingEditionKey>(row: RecordWithFoundPrinting<R>): string {
+  return row.found === null ? row.record.printingId : row.found.card.title;
+}
+
 // Every printing in the master data by printing id, with its setcode, card and set. Built once per data load.
 // A setcode whose card or set is missing from the data is left out (and logged), so its printings show up as not found.
 export function buildFoundPrintingsById(data: MasterData): Map<string, FoundPrinting> {
