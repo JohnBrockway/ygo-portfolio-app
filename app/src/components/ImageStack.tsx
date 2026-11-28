@@ -27,12 +27,12 @@ function imageStyle(depth: number, imageCount: number): CSSProperties {
 
 // A tile image made of several images stacked like a pile of cards: the first one in front at the lower left,
 // each of the others behind it, a step further up and to the right and a step darker.
-export function TileStack({ imageUrls }: { imageUrls: string[] }) {
+export function ImageStack({ imageUrls }: { imageUrls: string[] }) {
   return (
     <div className="tile-image tile-stack">
       <div className="tile-stack-area">
         {imageUrls.map((url, depth) => (
-          <img key={url} src={url} alt="" loading="lazy" style={imageStyle(depth, imageUrls.length)} />
+          <img key={depth} src={url} alt="" loading="lazy" style={imageStyle(depth, imageUrls.length)} />
         ))}
       </div>
     </div>

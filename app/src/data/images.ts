@@ -1,4 +1,5 @@
 import { DATA_BASE_URL } from "../config";
+import type { FoundPrinting } from "./foundPrintings";
 import { getVerifiedArtworks } from "./printings";
 import type { Card, CardImage, CardSet, Printing } from "./types";
 
@@ -78,4 +79,18 @@ export function getTileImageUrls(card: Card, artworks: string[]): string[] {
 // the rule for which artwork counts stays in one place).
 export function getPrintingImageUrl(card: Card, printing: Printing): string | null {
   return getTileImageUrls(card, getVerifiedArtworks([printing]))[0] ?? null;
+}
+
+// The URLs of the images of several printings (see getPrintingImageUrl), one per printing, in the order of the printings.
+// Printings that show the same image repeat it. A printing whose card has no image adds none, so this is empty (show the
+// placeholder) if none of them has an image.
+export function getPrintingImageUrls(foundPrintings: readonly FoundPrinting[]): string[] {
+  const urls: string[] = [];
+  for (const { card, printing } of foundPrintings) {
+    const url = getPrintingImageUrl(card, printing);
+    if (url !== null) {
+      urls.push(url);
+    }
+  }
+  return urls;
 }

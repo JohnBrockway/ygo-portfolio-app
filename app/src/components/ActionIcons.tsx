@@ -57,6 +57,16 @@ export function PlusIcon() {
   );
 }
 
+export function StackIcon() {
+  return (
+    <Icon>
+      <path d="M18 13H19.5A2.5 2.5 0 0 0 22 10.5v-6A2.5 2.5 0 0 0 19.5 2h-6A2.5 2.5 0 0 0 11 4.5V6" />
+      <path d="M14 17H15.5A2.5 2.5 0 0 0 18 14.5v-6A2.5 2.5 0 0 0 15.5 6h-6A2.5 2.5 0 0 0 7 8.5V10" />
+      <rect x="3" y="10" width="11" height="11" rx="2.5" />
+    </Icon>
+  );
+}
+
 export function TrashIcon() {
   return (
     <Icon>

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { EntryGroupContainer } from "../components/EntryGroupContainer";
+import { GroupTile } from "../components/GroupTile";
 import { ListEntryTile } from "../components/ListEntryTile";
 import { ListMeta } from "../components/ListMeta";
 import { ListSelectionBar } from "../components/ListSelectionBar";
@@ -9,14 +10,18 @@ import type { ListSelection } from "../components/ListSelectionBar";
 import { isCollectionComplete } from "../components/OwnedBadge";
 import { SearchBar } from "../components/SearchBar";
 import { SelectButton } from "../components/SelectButton";
+import { getDemandSatisfaction, getGroupDemandKey } from "../data/demandSatisfaction";
+import type { DemandSatisfaction } from "../data/demandSatisfaction";
+import { editionLabel } from "../data/editions";
 import type { EntryGroup } from "../data/entryGroups";
 import { buildFoundPrintingsById, getRecordName, joinRecordsWithMasterData } from "../data/foundPrintings";
 import type { RecordWithFoundPrinting } from "../data/foundPrintings";
 import { canChangeLists, getEntryOwnership, getListEntries, getListGroups, useLiveLists } from "../data/lists";
 import type { EntryOwnership, ListsState } from "../data/lists";
-import { OWNED_LIST_ID } from "../data/listsDb";
+import { getEntryKey, OWNED_LIST_ID } from "../data/listsDb";
 import type { ListEntryRecord } from "../data/listsDb";
 import { loadMasterData } from "../data/masterData";
+import { printingName } from "../data/printings";
 import { joinSearchTexts, matchesAllTokensInLowerText, splitQuery } from "../data/search";
 import type { TileSelection } from "../data/tileSelection";
 import type { MasterData } from "../data/types";
@@ -115,6 +120,38 @@ function getGroupTitle(tileEntries: readonly [ListTileEntry, ...ListTileEntry[]]
   return `${getRecordName(first.tile)} +${tileEntries.length - 1}`;
 }
 
+// What the header of an open group says covers it: the member that carries it (satisfiedBy, see DemandSatisfaction), by
+// name, printing and edition, or null where nothing carries the group.
+function getSatisfiedByDescription(
+  tileEntries: readonly [ListTileEntry, ...ListTileEntry[]],
+  satisfiedBy: string | null,
+): string | null {
+  if (satisfiedBy === null) {
+    return null;
+  }
+  const carrier = tileEntries.find(({ tile }) => getEntryKey(tile.record) === satisfiedBy);
+  if (carrier === undefined) {
+    throw new Error(`A group is satisfied by "${satisfiedBy}", which is not one of its members`);
+  }
+  const { record, found } = carrier.tile;
+  const edition = editionLabel(record.edition);
+  if (found === null) {
+    return `${record.printingId} (${edition})`;
+  }
+  return `${found.card.title}, ${printingName(found.printing, found.setcode.printings)} (${edition})`;
+}
+
+function getGroupSatisfaction(
+  satisfactions: ReadonlyMap<string, DemandSatisfaction>,
+  group: EntryGroup,
+): DemandSatisfaction {
+  const satisfaction = satisfactions.get(getGroupDemandKey(group));
+  if (satisfaction === undefined) {
+    throw new Error(`No satisfaction was worked out for group "${group.groupId}" of list "${group.listId}"`);
+  }
+  return satisfaction;
+}
+
 // What is selected now, sorted by kind. It is worked out from everything on the list, not only from what the filters
 // show, so entries picked under one search stay picked under the next, and an entry that is gone or has changed
 // groups is counted as what it is now.
@@ -149,12 +186,15 @@ function toggledSet(set: ReadonlySet<string>, value: string): Set<string> {
   return toggled;
 }
 
-// The entries of a list as tiles, with those in a group inside a container, under a filter bar and, where it applies,
-// the ownership toggle and a floating button that starts select mode (while in select mode the selection bar is shown
-// instead, with its own button to leave it). The filter text, the toggle and the selection are plain state of this
-// component (not in the address bar); the caller keys this component by list so they start out cleared again when
-// another list is opened. An entry shows when it passes both filters; a group shows, with all its members, when any of
-// them passes the search. (The "Unowned" switch does not hide groups yet: that needs whether the group is satisfied.)
+// The entries of a list as tiles, under a filter bar and, where it applies, the ownership toggle and a floating button
+// that starts select mode (while in select mode the selection bar is shown instead, with its own button to leave it). A
+// group is one tile that opens, in place, into a container around the tiles of its members. In select mode every group
+// is open and can't be folded up, so what is picked is always picked in containers and member tiles; when select mode
+// ends, all groups are folded up again. The filter text, the toggle, which groups are open and the selection are plain
+// state of this component (not in the address bar); the caller keys this component by list so they start out cleared
+// again when another list is opened. An entry shows when it passes both
+// filters. A group shows, with all its members, when any of them passes the search, and, with the "Unowned" switch on,
+// unless what is owned covers it completely.
 function ListContents({
   listId,
   entries,
@@ -175,6 +215,7 @@ function ListContents({
   const [selectMode, setSelectMode] = useState(false);
   const [selectedEntryKeys, setSelectedEntryKeys] = useState<ReadonlySet<string>>(() => new Set());
   const [selectedGroupIds, setSelectedGroupIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [expandedGroupIds, setExpandedGroupIds] = useState<ReadonlySet<string>>(() => new Set());
   const tokens = useMemo(() => splitQuery(query), [query]);
 
   // Built once per data load, not per change to the list.
@@ -193,15 +234,19 @@ function ListContents({
   // Groups only exist on the other lists: Owned holds real copies, so "any of these" makes no sense there.
   const isOwnedList = listId === OWNED_LIST_ID;
 
+  // Worked out once per change to lists (see getDemandSatisfaction), so this is a lookup, not a calculation.
+  const satisfactions = getDemandSatisfaction(listsState);
+
   function matchesSearch({ searchText }: ListTileEntry): boolean {
     return matchesAllTokensInLowerText(searchText, tokens);
   }
 
-  // Keeps the order the items are already in. "Unowned" hides only the fully owned entries, so unowned and partly owned
-  // ones stay.
+  // Keeps the order the items are already in. "Unowned" hides only the fully owned entries, and the groups that what is
+  // owned covers completely, so unowned and partly owned ones stay.
   const visibleItems = displayItems.filter((item) => {
     if (item.group !== null) {
-      return item.tileEntries.some(matchesSearch);
+      const covered = getGroupSatisfaction(satisfactions, item.group).level === "complete";
+      return !(unownedOnly && covered) && item.tileEntries.some(matchesSearch);
     }
     const [tileEntry] = item.tileEntries;
     return !(unownedOnly && tileEntry.allRequiredCopiesOwned) && matchesSearch(tileEntry);
@@ -213,8 +258,9 @@ function ListContents({
   }
 
   function handleExitSelectMode() {
-    // What was picked is let go of when select mode ends.
+    // What was picked is let go of when select mode ends, and the groups that select mode opened are folded up again.
     clearSelection();
+    setExpandedGroupIds(new Set());
     setSelectMode(false);
   }
 
@@ -254,6 +300,41 @@ function ListContents({
     );
   }
 
+  function handleToggleGroupExpanded(groupId: string) {
+    setExpandedGroupIds((current) => toggledSet(current, groupId));
+  }
+
+  // A group is one tile, or, once opened (and always in select mode), the container with the tiles of all its members in
+  // it.
+  function renderGroup(group: EntryGroup, groupTileEntries: readonly [ListTileEntry, ...ListTileEntry[]]): ReactNode {
+    const title = getGroupTitle(groupTileEntries);
+    const satisfaction = getGroupSatisfaction(satisfactions, group);
+    if (!selectMode && !expandedGroupIds.has(group.groupId)) {
+      return (
+        <li key={`group-${group.groupId}`}>
+          <GroupTile
+            title={title}
+            tiles={groupTileEntries.map(({ tile }) => tile)}
+            satisfaction={satisfaction}
+            onExpand={() => handleToggleGroupExpanded(group.groupId)}
+          />
+        </li>
+      );
+    }
+    return (
+      <li key={`group-${group.groupId}`} className="entry-group-item">
+        <EntryGroupContainer
+          title={title}
+          coveredBy={getSatisfiedByDescription(groupTileEntries, satisfaction.satisfiedBy)}
+          selection={getGroupSelection(group.groupId)}
+          onCollapse={() => handleToggleGroupExpanded(group.groupId)}
+        >
+          <ul className="tile-grid tile-grid-cards">{groupTileEntries.map(renderTile)}</ul>
+        </EntryGroupContainer>
+      </li>
+    );
+  }
+
   let results: ReactNode;
   if (visibleItems.length === 0) {
     results = <p className="muted">No entries on this list match these filters.</p>;
@@ -264,16 +345,7 @@ function ListContents({
           if (item.group === null) {
             return renderTile(item.tileEntries[0]);
           }
-          return (
-            <li key={`group-${item.group.groupId}`} className="entry-group-item">
-              <EntryGroupContainer
-                title={getGroupTitle(item.tileEntries)}
-                selection={getGroupSelection(item.group.groupId)}
-              >
-                <ul className="tile-grid tile-grid-cards">{item.tileEntries.map(renderTile)}</ul>
-              </EntryGroupContainer>
-            </li>
-          );
+          return renderGroup(item.group, item.tileEntries);
         })}
       </ul>
     );
@@ -284,7 +356,7 @@ function ListContents({
     ownershipFilter = (
       <label
         className="ownership-filter"
-        title="Unowned hides entries where you already own every wished copy"
+        title="Unowned hides entries where you already own every wished copy, and groups that what you own covers"
       >
         <span>All</span>
         <input
