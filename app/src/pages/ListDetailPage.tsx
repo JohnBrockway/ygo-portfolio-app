@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
+import { CollapseRaritiesButton } from "../components/CollapseRaritiesButton";
 import { EntryGroupContainer } from "../components/EntryGroupContainer";
 import { GroupTile } from "../components/GroupTile";
 import { ListEntryTile } from "../components/ListEntryTile";
@@ -186,15 +187,16 @@ function toggledSet(set: ReadonlySet<string>, value: string): Set<string> {
   return toggled;
 }
 
-// The entries of a list as tiles, under a filter bar and, where it applies, the ownership toggle and a floating button
-// that starts select mode (while in select mode the selection bar is shown instead, with its own button to leave it). A
-// group is one tile that opens, in place, into a container around the tiles of its members. In select mode every group
-// is open and can't be folded up, so what is picked is always picked in containers and member tiles; when select mode
-// ends, all groups are folded up again. The filter text, the toggle, which groups are open and the selection are plain
-// state of this component (not in the address bar); the caller keys this component by list so they start out cleared
-// again when another list is opened. An entry shows when it passes both
-// filters. A group shows, with all its members, when any of them passes the search, and, with the "Unowned" switch on,
-// unless what is owned covers it completely.
+// The entries of a list as tiles, under a filter bar and, where it applies, a toolbar with the ownership toggle and the
+// button that collapses rarities (which works on the whole list, not only on what the filters show), and a floating
+// button that starts select mode (while in select mode the selection bar is shown instead, with its own button to leave
+// it). A group is one tile that opens, in place, into a container around the tiles of its members. In select mode every
+// group is open and can't be folded up, so what is picked is always picked in containers and member tiles; when select
+// mode ends, all groups are folded up again. The filter text, the toggle, which groups are open and the selection are
+// plain state of this component (not in the address bar); the caller keys this component by list so they start out
+// cleared again when another list is opened. An entry shows when it passes both filters. A group shows, with all its
+// members, when any of them passes the search, and, with the "Unowned" switch on, unless what is owned covers it
+// completely.
 function ListContents({
   listId,
   entries,
@@ -304,6 +306,12 @@ function ListContents({
     setExpandedGroupIds((current) => toggledSet(current, groupId));
   }
 
+  // Opens exactly the groups that collapsing rarities made or added to, and folds up every other one, so the groups that
+  // are open afterwards are the ones the operation handled.
+  function handleReviewGroups(groupIds: readonly string[]) {
+    setExpandedGroupIds(new Set(groupIds));
+  }
+
   // A group is one tile, or, once opened (and always in select mode), the container with the tiles of all its members in
   // it.
   function renderGroup(group: EntryGroup, groupTileEntries: readonly [ListTileEntry, ...ListTileEntry[]]): ReactNode {
@@ -351,23 +359,32 @@ function ListContents({
     );
   }
 
-  let ownershipFilter: ReactNode = null;
+  let listToolbar: ReactNode = null;
   if (!isOwnedList) {
-    ownershipFilter = (
-      <label
-        className="ownership-filter"
-        title="Unowned hides entries where you already own every wished copy, and groups that what you own covers"
-      >
-        <span>All</span>
-        <input
-          type="checkbox"
-          role="switch"
-          checked={unownedOnly}
-          onChange={(event) => setUnownedOnly(event.target.checked)}
-          aria-label="Hide fully owned entries"
+    listToolbar = (
+      <div className="list-toolbar">
+        <label
+          className="ownership-filter"
+          title="Unowned hides entries where you already own every wished copy, and groups that what you own covers"
+        >
+          <span>All</span>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={unownedOnly}
+            onChange={(event) => setUnownedOnly(event.target.checked)}
+            aria-label="Hide fully owned entries"
+          />
+          <span>Unowned</span>
+        </label>
+        <CollapseRaritiesButton
+          listId={listId}
+          entries={tiles}
+          groups={groups}
+          changesDisabled={changesDisabled}
+          onReview={handleReviewGroups}
         />
-        <span>Unowned</span>
-      </label>
+      </div>
     );
   }
 
@@ -393,7 +410,7 @@ function ListContents({
   return (
     <>
       <SearchBar value={query} onChange={setQuery} label="Filter list by name or set number" />
-      {ownershipFilter}
+      {listToolbar}
       {selectionBar}
       {results}
       {selectButton}
